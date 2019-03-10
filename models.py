@@ -1,6 +1,10 @@
 import torch
 import torch.nn as nn
 
+class Flatten(nn.Module):
+    def forward(self, input):
+        return input.view(input.size(0), -1)
+
 
 class ResidualBlock(nn.Module):
     def __init__(self, inplane, outplane, stride=1, downsample=None):
@@ -9,46 +13,61 @@ class ResidualBlock(nn.Module):
         self.bn1 = nn.BatchNorm2d(outplane)
         self.conv2 = nn.Conv2d(outplane, outplane, kernel_size=3, stride=1, padding=1)
         self.bn2 = nn.BatchNorm2d(outplane)
+
         self.relu = nn.ReLU(inplace=True)
+        self.prelu =  nn.PReLU()
         self.downsample = downsample
 
     def forward(self, x):
         res = x
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-
-        out = self.conv2(out)
-        out = self.bn2(out)
+        x = self.conv1(x)
+        x = self.bn1(x)
+        # TODO
+        # Check up on the prelu in the paper
+        x = self.prelu(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
 
         if self.downsample is not None:
             res = self.downsample(x)
 
-        out += res
-        out = self.relu(out)
-        return out
-
-
-class Flatten(nn.Module):
-    def forward(self, input):
-        return input.view(input.size(0), -1)
-
+        x += res
+        x = self.relu(x)
+        return x
 
 class GeneratorNetwork(nn.Module):
     def __init__(self, input, num_classes):
         super(GeneratorNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(input, 16, kernel_size=3, stride=1, padding=1)
-        self.bn1 = nn.BatchNorm2d(16)
-        self.relu = nn.ReLU(inplace=True)
-        # self.max_pool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 
-        self.layer1 = self.block(16, 32, 1, stride=2)
-        self.layer2 = self.block(32, 32, 1, stride=2)
-        #self.avg_pool =  nn.AdaptiveAvgPool2d((1, 1))
-        self.flatten = Flatten()
-        self.fc1 = nn.Linear(3872, 256)
-        self.fc2 = nn.Linear(256, num_classes)
-        #self.fc2 = nn.Linear(32, num_classes)
+        self.conv1 = nn.Conv2d(input, 64, kernel_size=9, stride=1)
+        self.prelu = nn.PReLU()
+
+        self.layer1 = self.block(64, 64, 2, stride=1)
+        self.layer2 = self.block(64, 64, 2, stride=1)
+        self.layer3 = self.block(64, 64, 2, stride=1)
+        self.layer4 = self.block(64, 64, 2, stride=1)
+        self.layer5 = self.block(64, 64, 2, stride=1)
+        self.layer6 = self.block(64, 64, 2, stride=1)
+        self.layer7 = self.block(64, 64, 2, stride=1)
+        self.layer8 = self.block(64, 64, 2, stride=1)
+        self.layer9 = self.block(64, 64, 2, stride=1)
+        self.layer10 = self.block(64, 64, 2, stride=1)
+        self.layer11 = self.block(64, 64, 2, stride=1)
+        self.layer12 = self.block(64, 64, 2, stride=1)
+        self.layer13 = self.block(64, 64, 2, stride=1)
+        self.layer14 = self.block(64, 64, 2, stride=1)
+        self.layer15 = self.block(64, 64, 2, stride=1)
+        self.layer16 = self.block(64, 64, 2, stride=1)
+
+        self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
+        self.bn2 = nn.BatchNorm2d(64)
+
+        self.conv3 = nn.Conv2d(64, 256, kernel_size=3, stride=1)
+        self.pixelshuffle = nn.PixelShuffle()
+        
+        self.conv4 = nn.Conv2d(256, 256, kernel_size=3, stride=1)
+
+        self.conv5 = nn.Conv2d(256, 3, kernel_size=9, stride=1)
 
     def block(self, inplanes, planes, blocks, stride=1):
         downsample = None
@@ -57,7 +76,6 @@ class GeneratorNetwork(nn.Module):
                 nn.Conv2d(inplanes, planes, kernel_size=1, stride=stride),
                 nn.BatchNorm2d(planes),
             )
-
         layers = []
         layers.append(ResidualBlock(inplanes, planes, stride, downsample))
         for _ in range(1, blocks):
@@ -67,15 +85,42 @@ class GeneratorNetwork(nn.Module):
 
     def forward(self, x):
         x = self.conv1(x)
-        x = self.bn1(x)
-        x = self.relu(x)
-        # x = self.max_pool(x)
+        x = self.prelu(x)
+        res = x
+
+        # ResNet Blocks
         x = self.layer1(x)
         x = self.layer2(x)
-        # x = self.avg_pool(x)
-        x = self.flatten(x)
-        x = self.fc1(x)
-        x = self.fc2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.layer5(x)
+        x = self.layer6(x)
+        x = self.layer7(x)
+        x = self.layer8(x)
+        x = self.layer9(x)
+        x = self.layer10(x)
+        x = self.layer11(x)
+        x = self.layer12(x)
+        x = self.layer13(x)
+        x = self.layer14(x)
+        x = self.layer15(x)
+        x = self.layer16(x)
+
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x += res
+
+        x = self.conv3(x)
+        x = self.pixelshuffle(x)
+        x = self.pixelshuffle(x)
+        x = self.prelu(x)
+
+        x = self.conv4(x)
+        x = self.pixelshuffle(x)
+        x = self.pixelshuffle(x)
+        x = self.prelu(x)
+
+        x = self.conv5(x)
 
         return x
 
