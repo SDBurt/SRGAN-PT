@@ -13,9 +13,9 @@ from PIL import Image
 # From files
 from config import get_config
 
-def import_images(args):
+def import_images(path, type):
 
-    path = args.path + '*.jpg' 
+    path = path + '*.' + type
     print("Collecting images from: {}".format(path))
     image_list = []
     for filename in glob(path): #assuming gif
@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
 
     cfg = get_config()
-    images = import_images(cfg)
+    images = import_images(cfg.path, 'jpg')
 
     
 
