@@ -128,6 +128,14 @@ mem_arg.add_argument("--cap", type=int,
                        help="Maximum number of transitions in replay memory")
 
 # ----------------------------------------
+# Arguments for datasets
+mem_arg = add_argument_group("Datasets")
+
+mem_arg.add_argument("-p",
+                    "--path",
+                    default="datasets/",
+                    help="Path to image dataset")
+# ----------------------------------------
 # Function to be called externally
 def get_config():
     config, unparsed = parser.parse_known_args()
