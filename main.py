@@ -1,22 +1,40 @@
 # Libraries
-import numpy
+import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
+import argparse as ap
+from glob import glob
+
 from tqdm import trange
+from PIL import Image
 
 # From files
 from config import get_config
 
+def import_images(path, type):
 
+    path = path + '*.' + type
+    print("Collecting images from: {}".format(path))
+    image_list = []
+    for filename in glob(path): #assuming gif
+        im = np.array(Image.open(filename))
+        image_list.append(im)
+    return np.array(image_list)
 
-def main():
-    print("hello world")
+def main(images, cfg):
+    print("Number of images from input: {}".format(images.shape[0]))
+
 
 
 if __name__ == "__main__":
 
+
     cfg = get_config()
-    main()
+    images = import_images(cfg.path, 'jpg')
+
+    
+
+    main(images, cfg)
 
