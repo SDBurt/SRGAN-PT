@@ -41,32 +41,12 @@ class GeneratorNetwork(nn.Module):
 
         self.conv1 = nn.Conv2d(input, 64, kernel_size=9, stride=1)
         self.prelu = nn.PReLU()
-
-        self.layer1 = self.block(64, 64, 2, stride=1)
-        self.layer2 = self.block(64, 64, 2, stride=1)
-        self.layer3 = self.block(64, 64, 2, stride=1)
-        self.layer4 = self.block(64, 64, 2, stride=1)
-        self.layer5 = self.block(64, 64, 2, stride=1)
-        self.layer6 = self.block(64, 64, 2, stride=1)
-        self.layer7 = self.block(64, 64, 2, stride=1)
-        self.layer8 = self.block(64, 64, 2, stride=1)
-        self.layer9 = self.block(64, 64, 2, stride=1)
-        self.layer10 = self.block(64, 64, 2, stride=1)
-        self.layer11 = self.block(64, 64, 2, stride=1)
-        self.layer12 = self.block(64, 64, 2, stride=1)
-        self.layer13 = self.block(64, 64, 2, stride=1)
-        self.layer14 = self.block(64, 64, 2, stride=1)
-        self.layer15 = self.block(64, 64, 2, stride=1)
-        self.layer16 = self.block(64, 64, 2, stride=1)
-
+        self.layer = self.block(64, 64, 2, stride=1)
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
         self.bn2 = nn.BatchNorm2d(64)
-
         self.conv3 = nn.Conv2d(64, 256, kernel_size=3, stride=1)
-        self.pixelshuffle = nn.PixelShuffle()
-        
+        self.pixelshuffle = nn.PixelShuffle()  
         self.conv4 = nn.Conv2d(256, 256, kernel_size=3, stride=1)
-
         self.conv5 = nn.Conv2d(256, 3, kernel_size=9, stride=1)
 
     def block(self, inplanes, planes, blocks, stride=1):
@@ -89,22 +69,23 @@ class GeneratorNetwork(nn.Module):
         res = x
 
         # ResNet Blocks
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.layer5(x)
-        x = self.layer6(x)
-        x = self.layer7(x)
-        x = self.layer8(x)
-        x = self.layer9(x)
-        x = self.layer10(x)
-        x = self.layer11(x)
-        x = self.layer12(x)
-        x = self.layer13(x)
-        x = self.layer14(x)
-        x = self.layer15(x)
-        x = self.layer16(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x)
+        x = self.layer(x) # 16
+
 
         x = self.conv2(x)
         x = self.bn2(x)
