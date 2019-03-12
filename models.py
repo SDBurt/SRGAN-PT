@@ -84,7 +84,7 @@ class GeneratorNetwork(nn.Module):
         x = self.layer(x)
         x = self.layer(x)
         x = self.layer(x)
-        x = self.layer(x)
+        x = self.layer(x) # 16
 
 
         x = self.conv2(x)

@@ -131,10 +131,13 @@ mem_arg.add_argument("--cap", type=int,
 # Arguments for datasets
 mem_arg = add_argument_group("Datasets")
 
-mem_arg.add_argument("-p",
-                    "--path",
+mem_arg.add_argument("--path",
                     default="datasets/",
                     help="Path to image dataset")
+
+mem_arg.add_argument("--image_size",
+                    default=84,
+                    help="Imagesize")
 # ----------------------------------------
 # Function to be called externally
 def get_config():
