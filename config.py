@@ -128,16 +128,24 @@ mem_arg.add_argument("--cap", type=int,
                        help="Maximum number of transitions in replay memory")
 
 # ----------------------------------------
-# Arguments for datasets
-mem_arg = add_argument_group("Datasets")
+# Arguments for project
+project_arg = add_argument_group("Project")
 
-mem_arg.add_argument("--path",
+project_arg.add_argument("--path",
                     default="datasets/",
                     help="Path to image dataset")
 
-mem_arg.add_argument("--image_size",
+project_arg.add_argument("--image_size",
                     default=84,
                     help="Imagesize")
+
+project_arg.add_argument("--num_channels",
+                    default=3,
+                    help="Number of image channels")
+
+project_arg.add_argument("--update_iteration",
+                    default=1e6,
+                    help="Optimization update iteration")
 # ----------------------------------------
 # Function to be called externally
 def get_config():
