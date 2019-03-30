@@ -36,10 +36,10 @@ class ResidualBlock(nn.Module):
         return x
 
 class GeneratorNetwork(nn.Module):
-    def __init__(self, input, num_classes):
+    def __init__(self, cfg):
         super(GeneratorNetwork, self).__init__()
 
-        self.conv1 = nn.Conv2d(input, 64, kernel_size=9, stride=1)
+        self.conv1 = nn.Conv2d(cfg.num_channels, 64, kernel_size=9, stride=1)
         self.prelu = nn.PReLU()
         self.layer = self.block(64, 64, 2, stride=1)
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
@@ -106,10 +106,11 @@ class GeneratorNetwork(nn.Module):
         return x
 
 class DiscriminatorNetwork(nn.Module):
-    def __init__(self, input, num_classes):
+    def __init__(self, cfg):
         super(DiscriminatorNetwork, self).__init__()
 
-        self.conv1 = nn.Conv2d(input, 64, kernel_size=3, stride=1)
+        # image_size default is 64 as per paper spec
+        self.conv1 = nn.Conv2d(cfg.num_channels, 64, kernel_size=3, stride=1)
         self.lrelu = nn.LeakyReLU()
 
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=2)
