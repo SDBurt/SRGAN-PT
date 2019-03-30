@@ -180,23 +180,6 @@ def main(cfg):
     plt.imshow(np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=2, normalize=True).cpu(),(1,2,0)))
     plt.show()
 
-    # Build networks
-    # gen_net = GeneratorNetwork()
-    # gen_net.apply(weights_init)
-    # print(gen_net)
-    # 
-    # desc_net = DiscriminatorNetwork()
-    # desc_net.apply(weights_init)
-    # print(desc_net)
-
-    # TODO
-    # Loss function
-
-
-
-    # TODO
-    # Optimizers
-
     train()
 
 
