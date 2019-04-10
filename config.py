@@ -131,7 +131,7 @@ mem_arg.add_argument("--cap", type=int,
 # Arguments for project
 project_arg = add_argument_group("Project")
 
-project_arg.add_argument("--path",
+project_arg.add_argument("--dataset",
                     default="datasets/",
                     help="Path to image dataset")
 
