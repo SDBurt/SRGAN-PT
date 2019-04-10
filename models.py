@@ -1,6 +1,33 @@
 import torch
 import torch.nn as nn
 
+from collections import namedtuple
+
+# Class for VGG Loss
+# TODO: Currently this is not optimized for our implementation
+# Source: https://towardsdatascience.com/pytorch-implementation-of-perceptual-losses-for-real-time-style-transfer-8d608e2e9902
+LossOutput = namedtuple("LossOutput", ["relu1_2", "relu2_2", "relu3_3", "relu4_3"])
+# https://discuss.pytorch.org/t/how-to-extract-features-of-an-image-from-a-trained-model/119/3
+class LossNetwork(torch.nn.Module):
+    def __init__(self, vgg_model):
+        super(LossNetwork, self).__init__()
+        self.vgg_layers = vgg_model.features
+        self.layer_name_mapping = {
+            '3': "relu1_2",
+            '8': "relu2_2",
+            '15': "relu3_3",
+            '22': "relu4_3"
+        }
+    
+    def forward(self, x):
+        output = {}
+        for name, module in self.vgg_layers._modules.items():
+            x = module(x)
+            if name in self.layer_name_mapping:
+                output[self.layer_name_mapping[name]] = x
+        return LossOutput(**output)
+
+
 class Flatten(nn.Module):
     def forward(self, input):
         return input.view(input.size(0), -1)
@@ -45,7 +72,7 @@ class GeneratorNetwork(nn.Module):
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1)
         self.bn2 = nn.BatchNorm2d(64)
         self.conv3 = nn.Conv2d(64, 256, kernel_size=3, stride=1)
-        self.pixelshuffle = nn.PixelShuffle()  
+        self.pixelshuffle = nn.PixelShuffle(2) # This needs to be confirmed for upscale factor  
         self.conv4 = nn.Conv2d(256, 256, kernel_size=3, stride=1)
         self.conv5 = nn.Conv2d(256, 3, kernel_size=9, stride=1)
 

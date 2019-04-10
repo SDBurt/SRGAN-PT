@@ -7,6 +7,7 @@ from PIL import Image
 # Torch and Torchvision libraries
 import torch
 import torch.optim as optim
+import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as T
 import torchvision.datasets as dset
@@ -19,6 +20,7 @@ from tensorboardX import SummaryWriter
 
 # Our Libraries
 from config import get_config
+from models import DiscriminatorNetwork, GeneratorNetwork, LossNetwork
 
 # Decide which device to use
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -26,48 +28,24 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 # If todo is added for later work
 TODO = None
 
-# Class for VGG Loss
-# TODO: Currently this is not optimized for our implementation
-# Source: https://towardsdatascience.com/pytorch-implementation-of-perceptual-losses-for-real-time-style-transfer-8d608e2e9902
-LossOutput = namedtuple("LossOutput", ["relu1_2", "relu2_2", "relu3_3", "relu4_3"])
-# https://discuss.pytorch.org/t/how-to-extract-features-of-an-image-from-a-trained-model/119/3
-class LossNetwork(torch.nn.Module):
-    def __init__(self, vgg_model):
-        super(LossNetwork, self).__init__()
-        self.vgg_layers = vgg_model.features
-        self.layer_name_mapping = {
-            '3': "relu1_2",
-            '8': "relu2_2",
-            '15': "relu3_3",
-            '22': "relu4_3"
-        }
-    
-    def forward(self, x):
-        output = {}
-        for name, module in self.vgg_layers._modules.items():
-            x = module(x)
-            if name in self.layer_name_mapping:
-                output[self.layer_name_mapping[name]] = x
-        return LossOutput(**output)
-
 
 # Implementation of Photo-Realistic Single Image Super-Resolution using a Generative Adversarial Network
 # http://openaccess.thecvf.com/content_cvpr_2017/papers/Ledig_Photo-Realistic_Single_Image_CVPR_2017_paper.pdf
 class SRGAN(object):
 
     def __init__(self, cfg):
-        super(DQN, self).__init__()
+        super(SRGAN, self).__init__()
 
         # Configuration file
         self.cfg = cfg
 
         # Networks
-        self.generator = Generator(self.cfg).to(device)
-        self.discriminator = Discriminator(self.cfg).to(device)
+        self.generator = GeneratorNetwork(self.cfg).to(device)
+        self.discriminator = DiscriminatorNetwork(self.cfg).to(device)
         
         # Apply weights
-        self.generator.appy(weights_init)
-        self.discriminator.appy(weights_init)
+        self.generator.apply(self.weights_init)
+        self.discriminator.apply(self.weights_init)
 
         # Content loss (perceptual)
         self.content_loss = LossNetwork(self.generator)
@@ -104,6 +82,10 @@ class SRGAN(object):
         # Build writiers
         self.build_writers()
 
+        # Image Arrays
+        self.hr_images = []
+        self.lr_images = []
+
     # TODO
     # Configure to work for this project
     # Add paths to gitignore
@@ -136,24 +118,48 @@ class SRGAN(object):
             nn.init.normal_(m.weight.data, 1.0, 0.02) # Need this
             nn.init.constant_(m.bias.data, 0)
 
+    def downsample(self, data, factor=4):
+        '''
+        Downsample `data` by a specific factor using bicubic interpolation over a 4x4 pixel neighborhood.
+            Data is the input array containing the images to downsample, while factor is the scaling to downsample.
+            The factor parameter defaults to 4.
+        '''
+        resized_data = data[:]
+        for img in resized_data:
+            img = cv2.resize(img,fx=(1/factor),fy=(1/factor), interpolation=cv2.INTER_CUBIC)
+        
+        return resized_data
+
+    def batch(self, sample_size=16):
+        combined = np.array(list(zip(self.lr_images, self.hr_images)))
+        batch = random.sample(combined, sample_size)
+        return zip(*batch)
+
 
     def train(self, cfg, dataloader):
- 
+        '''
+        Train the NN
+        '''
+
+        # Need high resolution and low resolution images here
+        # Low resolution computed using Gaussian filter and then downsampling operation
+        # downsample()
+
         # For each epoch
         # TODO
         # determine how many epochs were used
-        for epoch in trange(cfg.episodes):
+        # for epoch in trange(cfg.episodes):
             # For each batch in dataloader
             # TODO
             # determine batch size / if batches were used
-            for i, data in enumerate(dataloader, 0):
+            # for i, data in enumerate(dataloader, 0):
                 
 
 
  
         
 
-def main(cfg):
+def main(srgan, cfg):
 
     # from https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
     # TODO
@@ -164,29 +170,34 @@ def main(cfg):
     #                           transforms.ToTensor(),
     #                           transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     dataset = dset.ImageFolder(root=cfg.path, transform=T.Compose([
-        T.Resize(cfg.image_size),
         T.CenterCrop(cfg.image_size), 
         T.ToTensor()
         ]))
 
+
+    srgan.hr_images = dataset
+    srgan.lr_images = srgan.downsample(dataset)
+
+    low_res, high_res = srgan.batch()
     # Create the dataloader
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True)
+    # dataloader = torch.utils.data.DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True)
 
     # test plot to see images
-    real_batch = next(iter(dataloader))
+    #real_batch = next(iter(dataloader))
+
     plt.figure(figsize=(8,8))
     plt.axis("off")
     plt.title("Training Images")
     plt.imshow(np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=2, normalize=True).cpu(),(1,2,0)))
     plt.show()
 
-    train()
+    # srgan.train()
 
 
 if __name__ == "__main__":
 
 
     cfg = get_config()
-
-    main(cfg)
+    srgan = SRGAN(cfg)
+    main(srgan, cfg)
 
