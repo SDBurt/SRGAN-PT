@@ -26,6 +26,7 @@ class SRGAN(object):
 
 
 def main():
+    cfg = get_config()
     srgan = SRGAN(cfg)
 
 if __name__ == "__main__":
