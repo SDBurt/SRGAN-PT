@@ -25,8 +25,8 @@ class SRGAN(object):
         data = tv.datasets.ImageFolder(root='/path/to/your/data/trn', transform=generic_transform)
 
 
+
 def main():
-    cfg = get_config()
     srgan = SRGAN(cfg)
 
 if __name__ == "__main__":
