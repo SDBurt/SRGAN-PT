@@ -44,6 +44,10 @@ train_arg.add_argument("-f", "--extension", type=str,
                        default=None,
                        help="Specific name to save training session or restore from")
 
+train_arg.add_argument("-e", "--epochs", type=int,
+                       default=10,
+                       help="Number of epochs for training")                   
+
 # ----------------------------------------
 # Arguments for testing
 test_arg = add_argument_group("Testing")
