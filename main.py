@@ -1,5 +1,8 @@
 import torch as tr
 import torchvision as tv
+import cv2
+import glob
+from PIL import Image, ImageFilter
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import trange
@@ -22,12 +25,23 @@ class SRGAN(object):
         self.discriminator = Discriminator(cfg).to(device)
     
     def preprocessing(self):
-        data = tv.datasets.ImageFolder(root='/path/to/your/data/trn', transform=generic_transform)
+        high_res = [cv2.imread(file) for file in glob.glob(cfg.data_dir+"*.jpg")]
+        low_res = self.downsample(high_res)
 
-
+    def downsample(self, data, factor=4):
+        '''
+        Downsample list of images by applying a gaussian blur followed by a resize of (1 / factor).
+        factor parameter defaults to 4 as per papers downsampling factor
+        '''
+        low_res = []
+        for img in data:
+            blur_img = cv2.GaussianBlur(img,(5,5),0)
+            low_res.append(cv2.resize(blur_img, None, fx=(1/factor),fy=(1/factor), interpolation = cv2.INTER_CUBIC))
+        return low_res
 
 def main():
     srgan = SRGAN(cfg)
+    srgan.preprocessing()
 
 if __name__ == "__main__":
     main()
