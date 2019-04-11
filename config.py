@@ -5,14 +5,6 @@ import argparse
 arg_lists = []
 parser = argparse.ArgumentParser()
 
-# Possible actions
-# ['NOOP', 'UP', 'RIGHT', 'LEFT', 'DOWN', 'UPRIGHT', 'UPLEFT', 'DOWNRIGHT', 'DOWNLEFT']
-NOOP = 0
-UP = 1
-RIGHT = 2
-LEFT = 3
-DOWN = 4
-
 # ----------------------------------------
 # Macro for arg parse
 def add_argument_group(name):
@@ -28,37 +20,9 @@ train_arg.add_argument("--learning_rate", type=float,
                        default=1e-4,
                        help="Learning rate (gradient step size)")
 
-train_arg.add_argument("--discount", type=float,
-                       default=0.99,
-                       help="Ensures Q function will converge by providing diminishing returns. Must be < 1")
-
-train_arg.add_argument("--epsilon", type=float,
-                       default=1.0,
-                       help="Probability of e-greedy exploration. Reduced linearly over time")
-
 train_arg.add_argument("--batch_size", type=int,
                        default=32,
                        help="Number of experiences to sample from memory during training")
-
-train_arg.add_argument("--episodes", type=int,
-                       default=4,
-                       help="Number of episodes to train on")
-
-train_arg.add_argument("--entropy_rate", type=int,
-                       default=1e-2,
-                       help="Ratio of entropy regularization to apply to loss")
-
-train_arg.add_argument("--update_target_rate", type=int,
-                       default=1e-2,
-                       help="Frequency to update target network. 1.0 is every episode, 0.1 is every 10 episodes, etc...")
-
-train_arg.add_argument("--alpha", type=float,
-                       default=0.6,
-                       help="Exponent for experience replay probability (0 is uniform dist)")
-
-train_arg.add_argument("--temp", type=int,
-                       default=0.99,
-                       help="Temperature for boltzmann exploration (higher = more exploration)")
 
 train_arg.add_argument("--log_dir", type=str,
                        default="./logs/",
@@ -92,11 +56,6 @@ test_arg.add_argument("--test_episodes", type=int,
 # Arguments for model
 model_arg = add_argument_group("Model")
 
-model_arg.add_argument("--model", type=str,
-                       default="atari",
-                       choices=["atari"],
-                       help="CNN architecture to use")
-
 model_arg.add_argument("--activ", type=str,
                        default="relu",
                        choices=["relu", "elu", "selu", "tanh", "sigmoid"],
@@ -107,45 +66,26 @@ model_arg.add_argument("--init", type=str,
                        choices=["glorot_normal", "glorot_uniform", "random_normal", "random_uniform", "truncated_normal"],
                        help="Initialization function to use")
 
-model_arg.add_argument("--actions", type=int,
-                       default=[NOOP, UP, RIGHT, LEFT, DOWN],
-                       help="Possible actions to take")
-
-model_arg.add_argument("--skiprate", type=int,
-                       default=3,
-                       help="Number of frames to skip during each action. Current action will be repeated for duration of skip")
-
-model_arg.add_argument("--num_frames", type=int,
-                       default=4,
-                       help="Number of stacked frames to send to CNN, depicting motion")
-
-# ----------------------------------------
-# Arguments for memory
-mem_arg = add_argument_group("Memory")
-
-mem_arg.add_argument("--cap", type=int,
-                       default=10000,
-                       help="Maximum number of transitions in replay memory")
-
 # ----------------------------------------
 # Arguments for project
 project_arg = add_argument_group("Project")
 
-project_arg.add_argument("--dataset",
-                    default="datasets/",
-                    help="Path to image dataset")
+project_arg.add_argument("--data_dir",
+                        default="./datasets",
+                        help="Path to image data")
 
-project_arg.add_argument("--image_size",
-                    default=84,
-                    help="Imagesize")
+project_arg.add_argument("--resolution",
+                        default=(96,96),
+                        help="Resolution of processed images")
 
 project_arg.add_argument("--num_channels",
-                    default=3,
-                    help="Number of image channels")
+                        default=3,
+                        help="Number of colour channels")
 
 project_arg.add_argument("--update_iteration",
-                    default=1e6,
-                    help="Optimization update iteration")
+                        default=1e6,
+                        help="Optimization update iteration")
+
 # ----------------------------------------
 # Function to be called externally
 def get_config():
@@ -157,3 +97,4 @@ def get_config():
         exit(1)
 
     return config
+
