@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import trange
 from PIL import Image
+import cv2
+import os
 
 # Torch and Torchvision libraries
 import torch
@@ -48,7 +50,7 @@ class SRGAN(object):
         self.discriminator.apply(self.weights_init)
 
         # Content loss (perceptual)
-        self.content_loss = LossNetwork(self.generator)
+        # self.content_loss = LossNetwork(self.generator)
 
         # Adversarial loss
         # TODO: Apparently, add generative component of the GAN to the perceptual loss?
@@ -124,15 +126,18 @@ class SRGAN(object):
             Data is the input array containing the images to downsample, while factor is the scaling to downsample.
             The factor parameter defaults to 4.
         '''
-        resized_data = data[:]
+        resized_data = data
         for img in resized_data:
-            img = cv2.resize(img,fx=(1/factor),fy=(1/factor), interpolation=cv2.INTER_CUBIC)
+            
+            # img(c,h,w)
+            img = T.Resize(img, int(img.size(2)/factor), Image.BICUBIC)
         
         return resized_data
 
     def batch(self, sample_size=16):
         combined = np.array(list(zip(self.lr_images, self.hr_images)))
         batch = random.sample(combined, sample_size)
+        print(batch.shape)
         return zip(*batch)
 
 
@@ -169,26 +174,48 @@ def main(srgan, cfg):
     #                           transforms.CenterCrop(image_size),
     #                           transforms.ToTensor(),
     #                           transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-    dataset = dset.ImageFolder(root=cfg.path, transform=T.Compose([
+    dataset = dset.ImageFolder(root=cfg.dataset, transform=T.Compose([
         T.CenterCrop(cfg.image_size), 
         T.ToTensor()
         ]))
 
 
-    srgan.hr_images = dataset
-    srgan.lr_images = srgan.downsample(dataset)
+    srgan.hr_images = dset.ImageFolder(root=cfg.dataset, transform=T.Compose([
+        T.CenterCrop(cfg.image_size), 
+        T.ToTensor()
+        ]))
+    
+    scale_factor = 4
 
-    low_res, high_res = srgan.batch()
+    srgan.lr_images = dset.ImageFolder(root=cfg.dataset, transform=T.Compose([
+        T.CenterCrop(cfg.image_size), 
+        T.Resize(int(cfg.image_size/scale_factor), Image.BICUBIC),
+        T.ToTensor()
+        ]))
+
+    #srgan.lr_images = srgan.downsample(srgan.hr_images)
+
+    #low_res, high_res = srgan.batch()
     # Create the dataloader
     # dataloader = torch.utils.data.DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True)
 
     # test plot to see images
-    #real_batch = next(iter(dataloader))
+    hr_dataloader = torch.utils.data.DataLoader(srgan.hr_images, batch_size=cfg.batch_size, shuffle=False)
+    lr_dataloader = torch.utils.data.DataLoader(srgan.lr_images, batch_size=cfg.batch_size, shuffle=False)
 
-    plt.figure(figsize=(8,8))
+    real_batch = next(iter(hr_dataloader))
+    downsampled_batch = next(iter(lr_dataloader))
+
+    plt.figure(figsize=(8,16))
+    plt.subplot(2,1,1)
     plt.axis("off")
     plt.title("Training Images")
     plt.imshow(np.transpose(vutils.make_grid(real_batch[0].to(device)[:64], padding=2, normalize=True).cpu(),(1,2,0)))
+    
+    plt.subplot(2,1,2)
+    plt.axis("off")
+    plt.title("Training Images")
+    plt.imshow(np.transpose(vutils.make_grid(downsampled_batch[0].to(device)[:64], padding=2, normalize=True).cpu(),(1,2,0)))
     plt.show()
 
     # srgan.train()
