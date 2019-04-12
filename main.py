@@ -61,7 +61,11 @@ class SRGAN(object):
         vgg = Vgg16(pretrained=True)
 
         for epoch in range(cfg.epochs):
+
             batch = self.get_batch()
+            content_loss = 0
+            adversarial_loss = 0
+
             for hr, ds in batch:
                 # HWC -> NCHW, make type torch.cuda.float32
                 ds = tr.tensor(ds[None], dtype=tr.float32).permute(
@@ -77,7 +81,12 @@ class SRGAN(object):
                 f_fake = vgg(sr)  # VGG features for fake image
 
                 # content loss euclidean distance between features
-                content_loss = mse_loss(f_real.relu2_2, f_fake.relu2_2)
+                content_loss += mse_loss(f_real.relu2_2, f_fake.relu2_2)
+                adversarial_loss += (-np.log(f_fake))
+
+            # Loss
+            loss = content_loss
+            loss.backwards()
 
 
 def main():
