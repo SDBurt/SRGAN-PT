@@ -11,7 +11,7 @@ from tensorboardX import SummaryWriter
 from config import get_config
 from models import Generator, Discriminator
 from preprocessing import package_data
-
+from vgg import Vgg16
 
 device = tr.device("cuda" if tr.cuda.is_available() else "cpu")
 cfg = get_config()
@@ -57,6 +57,9 @@ class SRGAN(object):
         self.generator().train()
         self.discriminator().train()
 
+        mse_loss = tr.nn.MSELoss()
+        vgg = Vgg16(pretrained=True)
+
         for epoch in range(cfg.epochs):
             batch = self.get_batch()
             for hr, ds in batch:
@@ -70,6 +73,11 @@ class SRGAN(object):
                 real_img = self.discriminator(hr)
 
                 # Perceptual Loss (VGG loss), which is content loss + 10e-3 * adversarial
+                f_real = vgg(hr)  # VGG features for real image
+                f_fake = vgg(sr)  # VGG features for fake image
+
+                # content loss euclidean distance between features
+                content_loss = mse_loss(f_real.relu2_2, f_fake.relu2_2)
 
 
 def main():
