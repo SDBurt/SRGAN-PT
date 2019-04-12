@@ -42,6 +42,7 @@ class Generator(tr.nn.Module):
         self.pad = Conv2dSame(cfg.num_channels, num_filters, 1)
 
     def forward(self, x_in):
+        print(x_in.shape)
         x_out = self.block0(x_in)
         x_pad = self.pad(x_in)
         return self.block1(x_out + x_pad)
