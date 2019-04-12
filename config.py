@@ -25,7 +25,7 @@ preprocess_arg.add_argument("--package_data",
                             help="Whether or not to invoke preprocessing.py")
 
 preprocess_arg.add_argument("--hr_resolution",
-                            default=(384,384),
+                            default=(1536,1536),
                             help="Resolution of downsampled images")
 
 preprocess_arg.add_argument("--lr_resolution",

@@ -1,5 +1,5 @@
 import torch as tr
-from layers import Residual, Flatten
+from layers import Residual, Flatten, Conv2dSame
 
 
 class Generator(tr.nn.Module):
@@ -10,7 +10,7 @@ class Generator(tr.nn.Module):
 
         blocks = []
         blocks.extend([
-            tr.nn.Conv2d(cfg.num_channels, num_filters, 9, 1, 1),
+            Conv2dSame(cfg.num_channels, num_filters, 9),
             tr.nn.PReLU()
         ])
 
@@ -19,7 +19,7 @@ class Generator(tr.nn.Module):
             blocks.append(Residual(num_filters))
         
         blocks.extend([
-            tr.nn.Conv2d(num_filters, num_filters, 3, 1, 1),
+            Conv2dSame(num_filters, num_filters, 3),
             tr.nn.BatchNorm2d(num_filters)
         ])
 
@@ -27,21 +27,30 @@ class Generator(tr.nn.Module):
         self.block0.apply(self.init_weights)
 
         self.block1 = tr.nn.Sequential(
-            tr.nn.Conv2d(num_filters, num_filters*4, 3, 1, 1),
+            Conv2dSame(num_filters, num_filters*4, 3),
+            tr.nn.PixelShuffle(2),
             tr.nn.PixelShuffle(2),
             tr.nn.PReLU(),
-            tr.nn.Conv2d(num_filters*4, num_filters*4, 3, 1, 1),
+            Conv2dSame(num_filters//4, num_filters*4, 3),
+            tr.nn.PixelShuffle(2),
             tr.nn.PixelShuffle(2),
             tr.nn.PReLU(),
-            tr.nn.Conv2d(num_filters*4, cfg.num_channels, 9, 1, 1)
+            Conv2dSame(num_filters//4, cfg.num_channels, 9)
         )
         self.block1.apply(self.init_weights)
+
+        self.pad = Conv2dSame(cfg.num_channels, num_filters, 1)
 
     def forward(self, x_in):
         print(x_in.shape)
         x_out = self.block0(x_in)
+<<<<<<< HEAD
         print(x_out.shape)
         return self.block1(x_out + x_in)
+=======
+        x_pad = self.pad(x_in)
+        return self.block1(x_out + x_pad)
+>>>>>>> b07c1c9d1005d2d7a8fb610b945361a3cf447f20
     
     def init_weights(self, layer):
         if type(layer) in [tr.nn.Conv2d, tr.nn.Linear]:
