@@ -49,14 +49,14 @@ class SRGAN(object):
         return batch
 
     def train(self):
-        for epoch in range(cfg.epochs):
+        for epoch in trange(cfg.epochs):
             batch = self.get_batch()
             for hr, ds in batch:
                 # HWC -> NCHW, make type torch.cuda.float32
                 ds = tr.tensor(ds[None], dtype=tr.float32).permute(0, 3, 1, 2).to(device)
                 sr = self.generator(ds)
-        
-        
+
+
 def main():
     srgan = SRGAN(cfg)
     srgan.train()
