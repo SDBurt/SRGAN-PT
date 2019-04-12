@@ -44,13 +44,8 @@ class Generator(tr.nn.Module):
     def forward(self, x_in):
         print(x_in.shape)
         x_out = self.block0(x_in)
-<<<<<<< HEAD
-        print(x_out.shape)
-        return self.block1(x_out + x_in)
-=======
         x_pad = self.pad(x_in)
         return self.block1(x_out + x_pad)
->>>>>>> b07c1c9d1005d2d7a8fb610b945361a3cf447f20
     
     def init_weights(self, layer):
         if type(layer) in [tr.nn.Conv2d, tr.nn.Linear]:

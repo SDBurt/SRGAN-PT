@@ -72,7 +72,6 @@ class SRGAN(object):
                     0, 3, 1, 2).to(device)
                 sr = self.generator(ds)
 
-<<<<<<< HEAD
                 # Discriminate between the real and generated fake image
                 fake_img = self.discriminator(sr)
                 real_img = self.discriminator(hr)
@@ -86,11 +85,9 @@ class SRGAN(object):
                 adversarial_loss += (-np.log(f_fake))
 
             # Loss
-            loss = content_loss
+            loss = content_loss + (10e-3 * adversarial_loss)
             loss.backwards()
 
-=======
->>>>>>> b07c1c9d1005d2d7a8fb610b945361a3cf447f20
 
 def main():
     srgan = SRGAN(cfg)

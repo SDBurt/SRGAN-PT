@@ -44,7 +44,6 @@ class Residual(tr.nn.Module):
     def forward(self, x_in):
         x_out = self.layer(x_in)
         return self.PReLU(x_out + x_in)
-<<<<<<< HEAD
 
 class Flatten(tr.nn.Module):
     def __init__(self):
@@ -68,6 +67,3 @@ class Conv2dSame(torch.nn.Module):
         x_out = self.layer(x_in)
         return x_out
 
-=======
- 
->>>>>>> b07c1c9d1005d2d7a8fb610b945361a3cf447f20
