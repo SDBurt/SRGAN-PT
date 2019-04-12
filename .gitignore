@@ -6,4 +6,6 @@ __pycache__/
 logs/
 saves/
 data/
+.venv
+.vscode
 

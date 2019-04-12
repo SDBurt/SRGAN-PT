@@ -9,13 +9,13 @@ from tensorboardX import SummaryWriter
 from config import get_config
 from models import Generator, Discriminator
 from preprocessing import package_data
+from torchvision.models.vgg import vgg19
 
 
 device = tr.device('cuda' if tr.cuda.is_available() else 'cpu')
 cfg = get_config()
 
 class SRGAN(object):
-
     def __init__(self, cfg):
         super(SRGAN, self).__init__()
 
@@ -23,6 +23,8 @@ class SRGAN(object):
 
         self.generator = Generator(cfg).to(device)
         self.discriminator = Discriminator(cfg).to(device)
+
+        self.vgg = vgg19(pretrained=True)
 
         self.preprocessing()
         self.build_writers()
@@ -84,6 +86,20 @@ class SRGAN(object):
 
                 if epoch % cfg.save_freq == 0:
                     tr.save(self.generator.state_dict(), self.save_path)
+                # Discriminate between the real and generated fake image
+                fake_img = self.discriminator(sr)
+                real_img = self.discriminator(hr)
+
+                # Perceptual Loss (VGG loss), which is content loss + 10e-3 * adversarial
+                f_real = self.vgg(hr)  # VGG features for real image
+                f_fake = self.vgg(sr)  # VGG features for fake image
+
+                # content loss euclidean distance between features
+                content_loss = tr.nn.MSELoss(f_real.relu2_2, f_fake.relu2_2)
+                adversarial_loss = -np.log(f_fake)
+
+                loss = content_loss + (10e-3 * adversarial_loss)
+                loss.backwards()
 
 
 def main():
@@ -92,4 +108,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
