@@ -60,7 +60,7 @@ class SRGAN(object):
         mse_loss = tr.nn.MSELoss()
         vgg = Vgg16(pretrained=True)
 
-        for epoch in range(cfg.epochs):
+        for epoch in trange(cfg.epochs):
 
             batch = self.get_batch()
             content_loss = 0
