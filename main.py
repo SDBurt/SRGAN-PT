@@ -11,14 +11,13 @@ from tensorboardX import SummaryWriter
 from config import get_config
 from models import Generator, Discriminator
 from preprocessing import package_data
-from vgg import Vgg16
+from torchvision.models.vgg import vgg19
 
 device = tr.device("cuda" if tr.cuda.is_available() else "cpu")
 cfg = get_config()
 
 
 class SRGAN(object):
-
     def __init__(self, cfg):
         super(SRGAN, self).__init__()
 
@@ -34,10 +33,10 @@ class SRGAN(object):
 
         # Load data
         cwd = os.getcwd()
-        f = h5py.File(cwd + cfg.data_dir + '/data.h5', 'r')
-        lr = f['lr'][:]
-        hr = f['hr'][:]
-        ds = f['ds'][:]
+        f = h5py.File(cwd + cfg.data_dir + "/data.h5", "r")
+        lr = f["lr"][:]
+        hr = f["hr"][:]
+        ds = f["ds"][:]
         f.close()
 
         self.data_tr = list(zip(hr, ds))
@@ -68,8 +67,9 @@ class SRGAN(object):
 
             for hr, ds in batch:
                 # HWC -> NCHW, make type torch.cuda.float32
-                ds = tr.tensor(ds[None], dtype=tr.float32).permute(
-                    0, 3, 1, 2).to(device)
+                ds = (
+                    tr.tensor(ds[None], dtype=tr.float32).permute(0, 3, 1, 2).to(device)
+                )
                 sr = self.generator(ds)
 
                 # Discriminate between the real and generated fake image
@@ -82,7 +82,7 @@ class SRGAN(object):
 
                 # content loss euclidean distance between features
                 content_loss += mse_loss(f_real.relu2_2, f_fake.relu2_2)
-                adversarial_loss += (-np.log(f_fake))
+                adversarial_loss += -np.log(f_fake)
 
             # Loss
             loss = content_loss + (10e-3 * adversarial_loss)
