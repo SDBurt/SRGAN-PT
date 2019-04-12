@@ -13,6 +13,30 @@ def add_argument_group(name):
     return arg
 
 # ----------------------------------------
+# Arguments for preprocessing
+preprocess_arg = add_argument_group("Preprocess")
+
+preprocess_arg.add_argument("--data_dir",
+                            default="/data",
+                            help="Path to image data")
+
+preprocess_arg.add_argument("--package_data",
+                            default=False,
+                            help="Whether or not to invoke preprocessing.py")
+
+preprocess_arg.add_argument("--hr_resolution",
+                            default=(384,384),
+                            help="Resolution of downsampled images")
+
+preprocess_arg.add_argument("--lr_resolution",
+                            default=(96,96),
+                            help="Resolution of downsampled images")
+
+preprocess_arg.add_argument("-factor",
+                            default=4,
+                            help="Downsample factor")
+
+# ----------------------------------------
 # Arguments for training
 train_arg = add_argument_group("Training")
 
@@ -23,6 +47,14 @@ train_arg.add_argument("--learning_rate", type=float,
 train_arg.add_argument("--batch_size", type=int,
                        default=32,
                        help="Number of experiences to sample from memory during training")
+
+train_arg.add_argument("--epochs", type=int,
+                       default=10,
+                       help="Number of epochs for training")
+
+train_arg.add_argument("--update_iteration",
+                        default=1e6,
+                        help="Optimization update iteration")
 
 train_arg.add_argument("--log_dir", type=str,
                        default="./logs/",
@@ -43,10 +75,6 @@ train_arg.add_argument("--save_freq", type=int,
 train_arg.add_argument("-f", "--extension", type=str,
                        default=None,
                        help="Specific name to save training session or restore from")
-
-train_arg.add_argument("-e", "--epochs", type=int,
-                       default=10,
-                       help="Number of epochs for training")                   
 
 # ----------------------------------------
 # Arguments for testing
@@ -70,25 +98,9 @@ model_arg.add_argument("--init", type=str,
                        choices=["glorot_normal", "glorot_uniform", "random_normal", "random_uniform", "truncated_normal"],
                        help="Initialization function to use")
 
-# ----------------------------------------
-# Arguments for project
-project_arg = add_argument_group("Project")
-
-project_arg.add_argument("--data_dir",
-                        default="./datasets",
-                        help="Path to image data")
-
-project_arg.add_argument("--resolution",
-                        default=(96,96),
-                        help="Resolution of processed images")
-
-project_arg.add_argument("--num_channels",
+model_arg.add_argument("--num_channels",
                         default=3,
                         help="Number of colour channels")
-
-project_arg.add_argument("--update_iteration",
-                        default=1e6,
-                        help="Optimization update iteration")
 
 # ----------------------------------------
 # Function to be called externally

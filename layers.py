@@ -14,9 +14,9 @@ class Residual(tr.nn.Module):
             tr.nn.BatchNorm2d(num_filters)
         )
 
-    def forward(x_in):
+    def forward(self, x_in):
         x_out = self.layer(x_in)
-        return tr.nn.PRelu(x_out + x_in)
+        return tr.nn.PReLU(x_out + x_in)
 
 class Flatten(tr.nn.Module):
     def __init__(self):

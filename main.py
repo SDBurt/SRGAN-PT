@@ -1,16 +1,13 @@
 import torch as tr
 import torchvision as tv
-import cv2
-import glob
-import random
 import numpy as np
-import matplotlib.pyplot as plt
+import cv2, random, os, h5py
 from tqdm import trange
 from pathlib import Path
-from datetime import datetime
 from tensorboardX import SummaryWriter
 from config import get_config
 from models import Generator, Discriminator
+from preprocessing import package_data
 
 
 device = tr.device("cuda" if tr.cuda.is_available() else "cpu")
@@ -27,40 +24,37 @@ class SRGAN(object):
         self.preprocessing()
 
     def preprocessing(self):
-        high_res = [cv2.imread(file) for file in glob.glob(cfg.data_dir+"*.jpg")]
-        low_res = self.downsample(high_res)
-        self.images = np.array(list(zip(high_res, low_res)))
+        if cfg.package_data:
+            # Package data into H5 format
+            package_data(cfg)
 
-    def downsample(self, data, factor=4):
-        '''
-        Downsample list of images by applying a gaussian blur followed by a resize of (1 / factor).
-        factor parameter defaults to 4 as per papers downsampling factor
-        '''
-        assert len(data) > 0
-        low_res = []
-        for img in data:
-            blur_img = cv2.GaussianBlur(img,(5,5),0)
-            low_res.append(cv2.resize(blur_img, None, fx=(1/factor),fy=(1/factor), interpolation = cv2.INTER_CUBIC))
-        return low_res
+        # Load data
+        cwd = os.getcwd()
+        f = h5py.File(cwd + cfg.data_dir + '/data.h5', 'r')
+        lr = f['lr'][:]
+        hr = f['hr'][:]
+        ds = f['ds'][:]
+        f.close()
 
-    def batch(self):
-        '''return a batch from images'''
+        self.data_tr = list(zip(hr, ds))
+        self.size = len(self.data_tr)
 
-        size = len(self.images)
+    def get_batch(self):
         # select batch
-        if size < cfg.batch_size:
-            batch = random.sample(list(self.images), size)
+        if self.size < cfg.batch_size:
+            batch = random.sample(self.data_tr, self.size)
         else:
-            batch = random.sample(list(self.images), cfg.batch_size)
+            batch = random.sample(self.data_tr, cfg.batch_size)
 
         return batch
 
     def train(self):
         for epoch in range(cfg.epochs):
-            batch = self.batch()
-            for hr, lr in batch:
-                sr = self.generator(tr.tensor(lr))
-        
+            batch = self.get_batch()
+            for hr, ds in batch:
+                # HWC -> NCHW, make type torch.cuda.float32
+                ds = tr.tensor(ds[None], dtype=tr.float32).permute(0, 3, 1, 2).to(device)
+                sr = self.generator(ds)
         
         
 def main():

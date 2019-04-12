@@ -39,6 +39,7 @@ class Generator(tr.nn.Module):
 
     def forward(self, x_in):
         x_out = self.block0(x_in)
+        print(x_out)
         return self.block1(x_out + x_in)
     
     def init_weights(self, layer):
@@ -50,7 +51,8 @@ class Discriminator(tr.nn.Module):
         super(Discriminator, self).__init__()
         num_filters = 64
         # resolution divided by 4 strides of 2
-        hw_flat = int(cfg.resolution[0] / 2**4)
+        lr_hw_flat = int(cfg.lr_resolution[0] / 2**4)
+        hr_hw_flat = int(cfg.hr_resolution[0] / 2**4)
         num_fc = 1024
 
         self.model = tr.nn.Sequential(
@@ -79,7 +81,7 @@ class Discriminator(tr.nn.Module):
             tr.nn.BatchNorm2d(num_filters*8),
             tr.nn.LeakyReLU(),
             Flatten(),
-            tr.nn.Linear(hw_flat * hw_flat * num_filters*8, num_fc),
+            tr.nn.Linear(lr_hw_flat * lr_hw_flat * num_filters*8, num_fc),
             tr.nn.LeakyReLU(),
             tr.nn.Linear(num_fc, 1),
             tr.nn.Sigmoid()
