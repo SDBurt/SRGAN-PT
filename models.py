@@ -38,8 +38,9 @@ class Generator(tr.nn.Module):
         self.block1.apply(self.init_weights)
 
     def forward(self, x_in):
+        print(x_in.shape)
         x_out = self.block0(x_in)
-        print(x_out)
+        print(x_out.shape)
         return self.block1(x_out + x_in)
     
     def init_weights(self, layer):
