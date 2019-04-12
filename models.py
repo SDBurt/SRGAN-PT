@@ -50,6 +50,7 @@ class Generator(tr.nn.Module):
         if type(layer) in [tr.nn.Conv2d, tr.nn.Linear]:
             tr.nn.init.xavier_uniform_(layer.weight)
 
+
 class Discriminator(tr.nn.Module):
     def __init__(self, cfg):
         super(Discriminator, self).__init__()

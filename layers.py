@@ -9,6 +9,7 @@ class Flatten(tr.nn.Module):
     def forward(self, x):
         return x.view(x.size()[0], -1)
 
+
 class Conv2dSame(tr.nn.Module):
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, dilation=1):
@@ -27,6 +28,7 @@ class Conv2dSame(tr.nn.Module):
         x_pad = tr.nn.ZeroPad2d((Pr//2, Pr - Pr//2, Pc//2, Pc - Pc//2))(x_in)
         x_out = self.layer(x_pad)
         return x_out
+
 
 class Residual(tr.nn.Module):
 
