@@ -1,7 +1,10 @@
 import torch as tr
 import torchvision as tv
 import numpy as np
-import cv2, random, os, h5py
+import cv2
+import random
+import os
+import h5py
 from tqdm import trange
 from pathlib import Path
 from tensorboardX import SummaryWriter
@@ -12,6 +15,7 @@ from preprocessing import package_data
 
 device = tr.device("cuda" if tr.cuda.is_available() else "cpu")
 cfg = get_config()
+
 
 class SRGAN(object):
 
@@ -49,18 +53,29 @@ class SRGAN(object):
         return batch
 
     def train(self):
+
+        self.generator().train()
+        self.discriminator().train()
+
         for epoch in range(cfg.epochs):
             batch = self.get_batch()
             for hr, ds in batch:
                 # HWC -> NCHW, make type torch.cuda.float32
-                ds = tr.tensor(ds[None], dtype=tr.float32).permute(0, 3, 1, 2).to(device)
+                ds = tr.tensor(ds[None], dtype=tr.float32).permute(
+                    0, 3, 1, 2).to(device)
                 sr = self.generator(ds)
+
+                # Discriminate between the real and generated fake image
+                fake_img = self.discriminator(sr)
+                real_img = self.discriminator(hr)
+
+                # Perceptual Loss (VGG loss), which is content loss + 10e-3 * adversarial
 
 
 def main():
     srgan = SRGAN(cfg)
     srgan.train()
 
+
 if __name__ == "__main__":
     main()
-
