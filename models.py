@@ -55,7 +55,7 @@ class Discriminator(tr.nn.Module):
     def __init__(self, cfg):
         super(Discriminator, self).__init__()
         num_filters = 64
-        hw_flat = int(cfg.hr_resolution[0] / 2**4)**2
+        hw_flat = int(cfg.hr_resolution[0] / 2**5)**2
         num_fc = 1024
 
         self.model = tr.nn.Sequential(
@@ -81,6 +81,13 @@ class Discriminator(tr.nn.Module):
             tr.nn.BatchNorm2d(num_filters*8),
             tr.nn.LeakyReLU(),
             Conv2dSame(num_filters*8, num_filters*8, 3, 2),
+            tr.nn.BatchNorm2d(num_filters*8),
+            tr.nn.LeakyReLU(),
+            # Add additional block to reduce parameters from 38.5 gb to 4.8 gb
+            Conv2dSame(num_filters*8, num_filters*16, 3),
+            tr.nn.BatchNorm2d(num_filters*8),
+            tr.nn.LeakyReLU(),
+            Conv2dSame(num_filters*16, num_filters*16, 3, 2),
             tr.nn.BatchNorm2d(num_filters*8),
             tr.nn.LeakyReLU(),
             Flatten(),
