@@ -42,7 +42,6 @@ class Generator(tr.nn.Module):
         self.pad = Conv2dSame(cfg.num_channels, num_filters, 1)
 
     def forward(self, x_in):
-        print(x_in.shape)
         x_out = self.block0(x_in)
         x_pad = self.pad(x_in)
         return self.block1(x_out + x_pad)
@@ -56,38 +55,36 @@ class Discriminator(tr.nn.Module):
     def __init__(self, cfg):
         super(Discriminator, self).__init__()
         num_filters = 64
-        # resolution divided by 4 strides of 2
-        lr_hw_flat = int(cfg.lr_resolution[0] / 2**4)
-        hr_hw_flat = int(cfg.hr_resolution[0] / 2**4)
+        hw_flat = int(cfg.hr_resolution[0] / 2**4)**2
         num_fc = 1024
 
         self.model = tr.nn.Sequential(
             # Channels in, channels out, filter size, stride, padding
-            tr.nn.Conv2d(cfg.num_channels, num_filters, 3, 1, 1),
+            Conv2dSame(cfg.num_channels, num_filters, 3),
             tr.nn.LeakyReLU(),
-            tr.nn.Conv2d(num_filters, num_filters, 3, 2, 1),
+            Conv2dSame(num_filters, num_filters, 3, 2),
             tr.nn.BatchNorm2d(num_filters),
             tr.nn.LeakyReLU(),
-            tr.nn.Conv2d(num_filters, num_filters*2, 3, 1, 1),
+            Conv2dSame(num_filters, num_filters*2, 3),
             tr.nn.BatchNorm2d(num_filters*2),
             tr.nn.LeakyReLU(),
-            tr.nn.Conv2d(num_filters*2, num_filters*2, 3, 2, 1),
+            Conv2dSame(num_filters*2, num_filters*2, 3, 2),
             tr.nn.BatchNorm2d(num_filters*2),
             tr.nn.LeakyReLU(),
-            tr.nn.Conv2d(num_filters*2, num_filters*4, 3, 1, 1),
+            Conv2dSame(num_filters*2, num_filters*4, 3),
             tr.nn.BatchNorm2d(num_filters*4),
             tr.nn.LeakyReLU(),
-            tr.nn.Conv2d(num_filters*4, num_filters*4, 3, 2, 1),
+            Conv2dSame(num_filters*4, num_filters*4, 3, 2),
             tr.nn.BatchNorm2d(num_filters*4),
             tr.nn.LeakyReLU(),
-            tr.nn.Conv2d(num_filters*4, num_filters*8, 3, 1, 1),
+            Conv2dSame(num_filters*4, num_filters*8, 3),
             tr.nn.BatchNorm2d(num_filters*8),
             tr.nn.LeakyReLU(),
-            tr.nn.Conv2d(num_filters*8, num_filters*8, 3, 2, 1),
+            Conv2dSame(num_filters*8, num_filters*8, 3, 2),
             tr.nn.BatchNorm2d(num_filters*8),
             tr.nn.LeakyReLU(),
             Flatten(),
-            tr.nn.Linear(lr_hw_flat * lr_hw_flat * num_filters*8, num_fc),
+            tr.nn.Linear(hw_flat * num_filters*8, num_fc),
             tr.nn.LeakyReLU(),
             tr.nn.Linear(num_fc, 1),
             tr.nn.Sigmoid()

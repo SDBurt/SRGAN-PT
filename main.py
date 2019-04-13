@@ -4,7 +4,7 @@ import numpy as np
 import cv2, random, os, h5py
 from tqdm import trange
 from pathlib import Path
-from time import datetime
+from datetime import datetime
 from tensorboardX import SummaryWriter
 from config import get_config
 from models import Generator, Discriminator
@@ -23,8 +23,9 @@ class SRGAN(object):
 
         self.generator = Generator(cfg).to(device)
         self.discriminator = Discriminator(cfg).to(device)
-
         self.vgg = vgg19(pretrained=True)
+
+        self.optim = tr.optim.Adam(list(self.generator.parameters()) + list(self.discriminator.parameters()), cfg.learning_rate)
 
         self.preprocessing()
         self.build_writers()
@@ -51,9 +52,9 @@ class SRGAN(object):
         if cfg.extension is None:
             cfg.extension = datetime.now().strftime('%Y-%m-%d_%H:%M:%S')
 
-        self.save_path = cfg.save_dir + '/' + cfg.extension
+        self.save_path = cfg.save_dir + cfg.extension
 
-        log_path = cfg.log_dir + '/' + cfg.extension
+        log_path = cfg.log_dir + cfg.extension
         self.writer = SummaryWriter(log_path)
 
     def logger(self, tape, loss):
@@ -64,6 +65,24 @@ class SRGAN(object):
     def log_state(self, state, name):
         if self.global_step % (cfg.log_freq * 10) == 0:
             self.writer.add_image(name, state, self.global_step)
+    
+    def update(self, hr, ds):
+        sr = self.generator(ds)
+        
+        generated = self.discriminator(sr)
+        truth = self.discriminator(hr)
+
+        vgg_hr = self.vgg(hr)
+        vgg_sr = self.vgg(sr)
+
+        # Euclidean distance between features
+        content_loss = tr.nn.MSELoss(vgg_hr.relu2_2, vgg_sr.relu2_2)
+        # Something something
+        adversarial_loss = -np.log(fake_img)
+
+        # Perceptual Loss (VGG loss)
+        loss = content_loss + (1e-3 * adversarial_loss)
+        loss.backwards()
 
     def get_batch(self):
         # select batch
@@ -75,31 +94,18 @@ class SRGAN(object):
         return batch
 
     def train(self):
-        if cfg.extension is not None:
+        # Load model
+        if os.path.isfile(self.save_path):
             self.generator.load_state_dict(tr.load(self.save_path))
         for epoch in trange(cfg.epochs):
             batch = self.get_batch()
             for hr, ds in batch:
                 # HWC -> NCHW, make type torch.cuda.float32
                 ds = tr.tensor(ds[None], dtype=tr.float32).permute(0, 3, 1, 2).to(device)
-                sr = self.generator(ds)
-
-                if epoch % cfg.save_freq == 0:
-                    tr.save(self.generator.state_dict(), self.save_path)
-                # Discriminate between the real and generated fake image
-                fake_img = self.discriminator(sr)
-                real_img = self.discriminator(hr)
-
-                # Perceptual Loss (VGG loss), which is content loss + 10e-3 * adversarial
-                f_real = self.vgg(hr)  # VGG features for real image
-                f_fake = self.vgg(sr)  # VGG features for fake image
-
-                # content loss euclidean distance between features
-                content_loss = tr.nn.MSELoss(f_real.relu2_2, f_fake.relu2_2)
-                adversarial_loss = -np.log(f_fake)
-
-                loss = content_loss + (10e-3 * adversarial_loss)
-                loss.backwards()
+                self.update(hr, ds)
+            
+            if epoch % cfg.save_freq == 0:
+                tr.save({'model': self.generator.state_dict(), 'optim': self.optim.state_dict(), 'global_step': self.global_step}, self.save_path)
 
 
 def main():
