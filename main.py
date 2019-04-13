@@ -10,9 +10,12 @@ from config import get_config
 from models import Generator, Discriminator
 from preprocessing import package_data
 from torchvision.models.vgg import vgg19
+from vgg import LossNetwork
 
 
-device = tr.device('cuda' if tr.cuda.is_available() else 'cpu')
+
+#device = tr.device('cuda' if tr.cuda.is_available() else 'cpu')
+device = 'cpu'
 cfg = get_config()
 
 class SRGAN(object):
@@ -21,14 +24,18 @@ class SRGAN(object):
 
         self.global_step = 0
 
-        self.generator = Generator(cfg).to(device)
-        self.discriminator = Discriminator(cfg).to(device)
-        self.vgg = vgg19(pretrained=True)
+        self.generator = Generator(cfg)
+        self.discriminator = Discriminator(cfg)
+        # self.vgg = vgg19(pretrained=True).features.to(device).eval()
 
         self.optim = tr.optim.Adam(list(self.generator.parameters()) + list(self.discriminator.parameters()), cfg.learning_rate)
 
         self.preprocessing()
         self.build_writers()
+
+        vgg_model = vgg19(pretrained=True).to(device)
+        self.loss_network = LossNetwork(vgg_model)
+        self.loss_network.eval()
 
     def preprocessing(self):
         if cfg.package_data:
@@ -67,17 +74,31 @@ class SRGAN(object):
             self.writer.add_image(name, state, self.global_step)
     
     def update(self, hr, ds):
+
+        print("Generate")
         sr = self.generator(ds)
-        
+
+
+        print("Discriminate")
+        print("-- Generated")
         generated = self.discriminator(sr)
+        print("-- Truth")
         truth = self.discriminator(hr)
 
-        vgg_hr = self.vgg(hr)
-        vgg_sr = self.vgg(sr)
+        print("Loss")
+        print("-- VGG Generated")
+        print(sr.shape)
+        vgg_sr = self.loss_network(sr)
+
+        print("-- VGG Truth")
+        vgg_hr = self.loss_network(hr)
 
         # Euclidean distance between features
+        print("-- Content Loss")
         content_loss = tr.nn.MSELoss(vgg_hr.relu2_2, vgg_sr.relu2_2)
+
         # Something something
+        print("-- Adversarial Loss")
         adversarial_loss = -np.log(fake_img)
 
         # Perceptual Loss (VGG loss)
@@ -101,7 +122,9 @@ class SRGAN(object):
             batch = self.get_batch()
             for hr, ds in batch:
                 # HWC -> NCHW, make type torch.cuda.float32
-                ds = tr.tensor(ds[None], dtype=tr.float32).permute(0, 3, 1, 2).to(device)
+                
+                ds = tr.tensor(ds[None], dtype=tr.float32).permute(0, 3, 1, 2)
+                hr = tr.tensor(hr[None], dtype=tr.float32).permute(0, 3, 1, 2)
                 self.update(hr, ds)
             
             if epoch % cfg.save_freq == 0:

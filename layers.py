@@ -20,6 +20,7 @@ class Conv2dSame(tr.nn.Module):
         self.layer = tr.nn.Conv2d(in_channels, out_channels, kernel_size, stride, dilation=dilation)
 
     def forward(self, x_in):
+        print(x_in.shape)
         N, C, H, W = x_in.shape
         H2 = math.ceil(H / self.S)
         W2 = math.ceil(W / self.S)
