@@ -9,7 +9,7 @@ from tensorboardX import SummaryWriter
 from config import get_config
 from models import Generator, Discriminator
 from preprocessing import package_data
-from torchvision.models.vgg import vgg19
+from torchvision.models.vgg import vgg13
 from vgg import LossNetwork
 
 
@@ -33,7 +33,7 @@ class SRGAN(object):
         self.preprocessing()
         self.build_writers()
 
-        vgg_model = vgg19(pretrained=True).to(device)
+        vgg_model = vgg13(pretrained=True).to(device)
         self.loss_network = LossNetwork(vgg_model)
         self.loss_network.eval()
 
@@ -81,9 +81,9 @@ class SRGAN(object):
 
         print("Discriminate")
         print("-- Generated")
-        generated = self.discriminator(sr)
+        #generated = self.discriminator(sr)
         print("-- Truth")
-        truth = self.discriminator(hr)
+        #truth = self.discriminator(hr)
 
         print("Loss")
         print("-- VGG Generated")
