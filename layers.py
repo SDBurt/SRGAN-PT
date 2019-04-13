@@ -9,6 +9,17 @@ class Flatten(tr.nn.Module):
     def forward(self, x):
         return x.view(x.size()[0], -1)
 
+class ConvLayer(tr.nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1):
+        super(ConvLayer, self).__init__()
+        reflection_padding = kernel_size // 2
+        self.reflection_pad = tr.nn.ReflectionPad2d(reflection_padding)
+        self.conv2d = tr.nn.Conv2d(in_channels, out_channels, kernel_size, stride)
+
+    def forward(self, x):
+        out = self.reflection_pad(x)
+        out = self.conv2d(out)
+        return out
 
 class Conv2dSame(tr.nn.Module):
 
@@ -20,7 +31,7 @@ class Conv2dSame(tr.nn.Module):
         self.layer = tr.nn.Conv2d(in_channels, out_channels, kernel_size, stride, dilation=dilation)
 
     def forward(self, x_in):
-        print(x_in.shape)
+        
         N, C, H, W = x_in.shape
         H2 = math.ceil(H / self.S)
         W2 = math.ceil(W / self.S)

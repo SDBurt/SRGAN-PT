@@ -14,8 +14,8 @@ from vgg import LossNetwork
 
 
 
-#device = tr.device('cuda' if tr.cuda.is_available() else 'cpu')
-device = 'cpu'
+device = tr.device('cuda' if tr.cuda.is_available() else 'cpu')
+#device = 'cpu'
 cfg = get_config()
 
 class SRGAN(object):
@@ -25,17 +25,19 @@ class SRGAN(object):
         self.global_step = 0
 
         self.generator = Generator(cfg)
-        self.discriminator = Discriminator(cfg)
+        #self.discriminator = Discriminator(cfg)
         # self.vgg = vgg19(pretrained=True).features.to(device).eval()
 
-        self.optim = tr.optim.Adam(list(self.generator.parameters()) + list(self.discriminator.parameters()), cfg.learning_rate)
+        # self.optim = tr.optim.Adam(list(self.generator.parameters()) + list(self.discriminator.parameters()), cfg.learning_rate)
+        self.optim = tr.optim.Adam(self.generator.parameters(), betas=(cfg.learning_rate, 0.999))
 
         self.preprocessing()
         self.build_writers()
 
-        vgg_model = vgg13(pretrained=True).to(device)
-        self.loss_network = LossNetwork(vgg_model)
-        self.loss_network.eval()
+        # vgg_model = vgg13(pretrained=True).to(device)
+        # self.loss_network = LossNetwork(vgg_model)
+        # self.loss_network.eval()
+        self.mse_loss = tr.nn.MSELoss()
 
     def preprocessing(self):
         if cfg.package_data:
@@ -64,7 +66,7 @@ class SRGAN(object):
         log_path = cfg.log_dir + cfg.extension
         self.writer = SummaryWriter(log_path)
 
-    def logger(self, tape, loss):
+    def logger(self, loss):
         if self.global_step % cfg.log_freq == 0:
             # Log vars
             self.writer.add_scalar('loss', loss, self.global_step)
@@ -75,35 +77,42 @@ class SRGAN(object):
     
     def update(self, hr, ds):
 
-        print("Generate")
         sr = self.generator(ds)
 
 
-        print("Discriminate")
-        print("-- Generated")
-        #generated = self.discriminator(sr)
-        print("-- Truth")
-        #truth = self.discriminator(hr)
+        # print("Discriminate")
+        # print("-- Generated")
+        # print(f"sr.shape: {sr.shape}")
+        # generated = self.discriminator(sr)
+        # print("-- Truth")
+        # print(f"hr.shape: {hr.shape}")
+        # truth = self.discriminator(hr)
 
-        print("Loss")
-        print("-- VGG Generated")
-        print(sr.shape)
-        vgg_sr = self.loss_network(sr)
+        # print("-- VGG Generated")
+        # print(f"sr.shape: {sr.shape}")
+        # vgg_sr = self.loss_network(sr)
 
-        print("-- VGG Truth")
-        vgg_hr = self.loss_network(hr)
+        # print("-- VGG Truth")
+        # print(f"hr.shape: {hr.shape}")
+        # vgg_hr = self.loss_network(hr)
 
         # Euclidean distance between features
-        print("-- Content Loss")
-        content_loss = tr.nn.MSELoss(vgg_hr.relu2_2, vgg_sr.relu2_2)
+        # print("-- Content Loss")
+        #content_loss = self.mse_loss(vgg_hr, vgg_sr)
 
-        # Something something
-        print("-- Adversarial Loss")
-        adversarial_loss = -np.log(fake_img)
+        loss = self.mse_loss(sr, hr)
+        self.logger(loss)
+        # # Something something
+        # print("-- Adversarial Loss")
+        # adversarial_loss = -np.log(generated)
 
         # Perceptual Loss (VGG loss)
-        loss = content_loss + (1e-3 * adversarial_loss)
-        loss.backwards()
+        # loss = content_loss + (1e-3 * adversarial_loss)
+        
+        loss.backward()
+        self.optim.step()
+
+        
 
     def get_batch(self):
         # select batch
@@ -126,7 +135,7 @@ class SRGAN(object):
                 ds = tr.tensor(ds[None], dtype=tr.float32).permute(0, 3, 1, 2)
                 hr = tr.tensor(hr[None], dtype=tr.float32).permute(0, 3, 1, 2)
                 self.update(hr, ds)
-            
+                self.global_step += 1
             if epoch % cfg.save_freq == 0:
                 tr.save({'model': self.generator.state_dict(), 'optim': self.optim.state_dict(), 'global_step': self.global_step}, self.save_path)
 

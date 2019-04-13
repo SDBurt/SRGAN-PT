@@ -1,5 +1,5 @@
 import torch as tr
-from layers import Residual, Flatten, Conv2dSame
+from layers import Residual, Flatten, Conv2dSame, Conv2dSame
 
 
 class Generator(tr.nn.Module):
@@ -42,6 +42,7 @@ class Generator(tr.nn.Module):
         self.pad = Conv2dSame(cfg.num_channels, num_filters, 1)
 
     def forward(self, x_in):
+        
         x_out = self.block0(x_in)
         x_pad = self.pad(x_in)
         return self.block1(x_out + x_pad)
@@ -56,6 +57,7 @@ class Discriminator(tr.nn.Module):
         super(Discriminator, self).__init__()
         num_filters = 64
         hw_flat = int(cfg.hr_resolution[0] / 2**4)**2
+        
         num_fc = 1024
 
         self.model = tr.nn.Sequential(
