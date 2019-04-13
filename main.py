@@ -25,12 +25,11 @@ class SRGAN(object):
         self.global_step = 0
 
         self.generator = Generator(cfg)
-        #self.discriminator = Discriminator(cfg)
+        self.discriminator = Discriminator(cfg)
         # self.vgg = vgg19(pretrained=True).features.to(device).eval()
 
-        # self.optim = tr.optim.Adam(list(self.generator.parameters()) + list(self.discriminator.parameters()), cfg.learning_rate)
-        self.optim = tr.optim.Adam(self.generator.parameters(), betas=(cfg.learning_rate, 0.999))
-
+        self.optim = tr.optim.Adam(list(self.generator.parameters()) + list(self.discriminator.parameters()), cfg.learning_rate)
+        
         self.preprocessing()
         self.build_writers()
 
@@ -78,15 +77,9 @@ class SRGAN(object):
     def update(self, hr, ds):
 
         sr = self.generator(ds)
-
-
-        # print("Discriminate")
-        # print("-- Generated")
-        # print(f"sr.shape: {sr.shape}")
-        # generated = self.discriminator(sr)
-        # print("-- Truth")
-        # print(f"hr.shape: {hr.shape}")
-        # truth = self.discriminator(hr)
+        
+        generated = self.discriminator(sr)
+        truth = self.discriminator(hr)
 
         # print("-- VGG Generated")
         # print(f"sr.shape: {sr.shape}")
@@ -97,21 +90,18 @@ class SRGAN(object):
         # vgg_hr = self.loss_network(hr)
 
         # Euclidean distance between features
-        # print("-- Content Loss")
-        #content_loss = self.mse_loss(vgg_hr, vgg_sr)
-
-        loss = self.mse_loss(sr, hr)
-        self.logger(loss)
-        # # Something something
-        # print("-- Adversarial Loss")
-        # adversarial_loss = -np.log(generated)
+        # content_loss = self.mse_loss(vgg_hr, vgg_sr)
+        content_loss = self.mse_loss(sr, hr)
+        
+        adversarial_loss = -np.log(generated)
 
         # Perceptual Loss (VGG loss)
-        # loss = content_loss + (1e-3 * adversarial_loss)
-        
+        loss = content_loss + (1e-3 * adversarial_loss)
+        self.logger(loss)
+
         loss.backward()
         self.optim.step()
-
+        
         
 
     def get_batch(self):
