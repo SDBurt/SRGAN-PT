@@ -85,13 +85,20 @@ class Discriminator(tr.nn.Module):
             tr.nn.LeakyReLU(),
             # Add additional block to reduce parameters from 38.5 gb to 4.8 gb
             Conv2dSame(num_filters*8, num_filters*16, 3),
+<<<<<<< HEAD
             tr.nn.BatchNorm2d(num_filters*8),
             tr.nn.LeakyReLU(),
             Conv2dSame(num_filters*16, num_filters*16, 3, 2),
             tr.nn.BatchNorm2d(num_filters*8),
+=======
+            tr.nn.BatchNorm2d(num_filters*16),
+            tr.nn.LeakyReLU(),
+            Conv2dSame(num_filters*16, num_filters*16, 3, 2),
+            tr.nn.BatchNorm2d(num_filters*16),
+>>>>>>> a58079f96084339c171dddd515d8763f10d32960
             tr.nn.LeakyReLU(),
             Flatten(),
-            tr.nn.Linear(hw_flat * num_filters*8, num_fc),
+            tr.nn.Linear(hw_flat * num_filters*16, num_fc),
             tr.nn.LeakyReLU(),
             tr.nn.Linear(num_fc, 1),
             tr.nn.Sigmoid()
