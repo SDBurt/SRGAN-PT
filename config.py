@@ -32,7 +32,7 @@ preprocess_arg.add_argument("--lr_resolution",
                             default=(96,96),
                             help="Resolution of downsampled images")
 
-preprocess_arg.add_argument("-factor",
+preprocess_arg.add_argument("--factor",
                             default=4,
                             help="Downsample factor")
 
@@ -45,11 +45,11 @@ train_arg.add_argument("--learning_rate", type=float,
                        help="Learning rate (gradient step size)")
 
 train_arg.add_argument("--batch_size", type=int,
-                       default=16,
+                       default=2,
                        help="Number of experiences to sample from memory during training")
 
 train_arg.add_argument("--epochs", type=int,
-                       default=10,
+                       default=100,
                        help="Number of epochs for training")
 
 train_arg.add_argument("--update_iteration",
