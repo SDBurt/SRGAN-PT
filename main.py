@@ -26,7 +26,8 @@ class SRGAN(object):
         self.discriminator = Discriminator(cfg)
 
         # Optimizers
-        self.optim = tr.optim.Adam(list(self.generator.parameters()) + list(self.discriminator.parameters()), cfg.learning_rate)
+        self.optim_gen = tr.optim.Adam(self.generator.parameters(), cfg.learning_rate)
+        self.optim_disc = tr.optim.Adam(self.generator.parameters(), cfg.learning_rate)
           
         # loss models
         self.mse_loss = tr.nn.MSELoss()
@@ -35,7 +36,6 @@ class SRGAN(object):
         #self.preprocessing()
         cwd = os.getcwd()
         data_path = cwd + cfg.data_dir + "/BSDS300"
-        print(data_path)
         dataset = get_dataset(data_path)
         self.dataloader = tr.utils.data.DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True)
 
@@ -64,19 +64,14 @@ class SRGAN(object):
 
     def log_state(self, name, state):
         if self.global_step % (cfg.log_freq * 5) == 0:
-            print(state.shape)
             image = reverse_normalize(state[0])
             self.writer.add_image(name, image, self.global_step)
 
+    def pretrain(self):
 
-    def train(self):
-        # Load model
-        if os.path.isfile(self.save_path):
-            self.generator.load_state_dict(tr.load(self.save_path))
+        ds = tr.FloatTensor(cfg.batch_size, cfg.num_channels, cfg.cropsize//cfg.factor, cfg.cropsize//cfg.factor)
 
-        ds = tr.FloatTensor(cfg.batch_size, 3, 24, 24)
-
-        for epoch in trange(2):
+        for epoch in trange(50):
             
             # Batch
             for i, data in enumerate(self.dataloader):
@@ -93,6 +88,50 @@ class SRGAN(object):
                     hr[j] = normalize(hr[j])
 
 
+
+                # Generate the super resolution image
+                sr = self.generator(ds)
+
+                # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
+                self.generator.zero_grad()
+
+                loss = self.mse_loss(sr, hr)
+
+                loss.backward()
+                self.optim_gen.step()
+        
+                self.logger("loss", loss)
+                self.log_state("Generated", sr)
+                self.log_state("Original", hr)
+                self.global_step += 1
+
+            if epoch % cfg.save_freq == 0:
+                tr.save({'gen_model': self.generator.state_dict(), 'optim': self.optim_gen.state_dict(), 'global_step': self.global_step}, self.save_path)
+
+    def train(self):
+
+        # Load model
+        if os.path.isfile(self.save_path):
+            self.generator.load_state_dict(tr.load(self.save_path))
+
+        ds = tr.FloatTensor(cfg.batch_size, cfg.num_channels, cfg.cropsize//cfg.factor, cfg.cropsize//cfg.factor)
+
+        for epoch in trange(cfg.batch_size):
+            
+            # Batch
+            for i, data in enumerate(self.dataloader):
+
+                # Generate data
+                hr, _ = data
+
+                # error occurs if not batch_size
+                if hr.size(0) < cfg.batch_size:
+                    break
+
+                # Downsample images to low resolution and normalize
+                for j in range(cfg.batch_size):
+                    ds[j] = scale(hr[j])
+                    hr[j] = normalize(hr[j])
 
                 # Generate the super resolution image
                 sr = self.generator(ds)
@@ -163,7 +202,10 @@ class SRGAN(object):
 
 def main():
     srgan = SRGAN(cfg)
-    srgan.train()
+    if cfg.pretrain:
+        srgan.pretrain()
+        
+    #srgan.train()
 
 if __name__ == '__main__':
     main()

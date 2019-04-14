@@ -32,6 +32,10 @@ preprocess_arg.add_argument("--lr_resolution",
                             default=(96,96),
                             help="Resolution of downsampled images")
 
+preprocess_arg.add_argument("--cropsize",
+                            default=96,
+                            help="cropped size of HR image")
+
 preprocess_arg.add_argument("--factor",
                             default=4,
                             help="Downsample factor")
@@ -39,6 +43,10 @@ preprocess_arg.add_argument("--factor",
 # ----------------------------------------
 # Arguments for training
 train_arg = add_argument_group("Training")
+
+train_arg.add_argument("--pretrain", type=bool,
+                       default=False,
+                       help="pretrain the generator prior to SRGAN")
 
 train_arg.add_argument("--learning_rate", type=float,
                        default=1e-4,
@@ -61,7 +69,7 @@ train_arg.add_argument("--log_dir", type=str,
                        help="Directory to save logs")
 
 train_arg.add_argument("--log_freq", type=int,
-                       default=10,
+                       default=4,
                        help="Number of steps before logging weights")
 
 train_arg.add_argument("--save_dir", type=str,

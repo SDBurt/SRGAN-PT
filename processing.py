@@ -9,7 +9,7 @@ normalize = tv.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.22
 
 # From https://discuss.pytorch.org/t/simple-way-to-inverse-transform-normalization/4821/3 by Kaican Li
 reverse_normalize = tv.transforms.Compose([
-    tv.transforms.Normalize(mean=[-0.485/0.229, -0.456/0.224, -0.406/0.255], std=[1/0.229, 1/0.224, 1/0.255])
+    tv.transforms.Normalize(mean=[-2.118, -2.036, -1.804], std=[4.367, 4.464, 4.444])
 ])
 
 randomcrop = tv.transforms.Compose([
