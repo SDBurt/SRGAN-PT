@@ -5,7 +5,7 @@ from layers import Residual, Flatten, Conv2dSame, Conv2dSame
 class Generator(tr.nn.Module):
     def __init__(self, cfg):
         super(Generator, self).__init__()
-        num_blks = 3
+        num_blks = 5
         num_filters = 64
 
         blocks = []
@@ -27,15 +27,15 @@ class Generator(tr.nn.Module):
         self.block0.apply(self.init_weights)
 
         self.block1 = tr.nn.Sequential(
-            Conv2dSame(num_filters, num_filters*4, 3),
+            Conv2dSame(num_filters, num_filters*2, 3),
             tr.nn.PixelShuffle(2),
-            tr.nn.PixelShuffle(2),
+
             tr.nn.PReLU(),
-            Conv2dSame(num_filters//4, num_filters*4, 3),
+            Conv2dSame(num_filters//2, num_filters*2, 3),
             tr.nn.PixelShuffle(2),
-            tr.nn.PixelShuffle(2),
+ 
             tr.nn.PReLU(),
-            Conv2dSame(num_filters//4, cfg.num_channels, 9)
+            Conv2dSame(num_filters//2, cfg.num_channels, 9)
         )
         self.block1.apply(self.init_weights)
 
@@ -56,7 +56,7 @@ class Discriminator(tr.nn.Module):
     def __init__(self, cfg):
         super(Discriminator, self).__init__()
         num_filters = 64
-        hw_flat = int(cfg.hr_resolution[0] / 2**7)**2
+        hw_flat = int(cfg.lr_resolution[0] / 2**4)**2
         num_fc = 1024
 
         self.model = tr.nn.Sequential(
@@ -66,47 +66,35 @@ class Discriminator(tr.nn.Module):
             Conv2dSame(num_filters, num_filters, 3, 2),
             tr.nn.BatchNorm2d(num_filters),
             tr.nn.LeakyReLU(),
+            # 64 to 128
             Conv2dSame(num_filters, num_filters*2, 3),
             tr.nn.BatchNorm2d(num_filters*2),
             tr.nn.LeakyReLU(),
             Conv2dSame(num_filters*2, num_filters*2, 3, 2),
             tr.nn.BatchNorm2d(num_filters*2),
             tr.nn.LeakyReLU(),
+            # 128 to 256
             Conv2dSame(num_filters*2, num_filters*4, 3),
             tr.nn.BatchNorm2d(num_filters*4),
             tr.nn.LeakyReLU(),
             Conv2dSame(num_filters*4, num_filters*4, 3, 2),
             tr.nn.BatchNorm2d(num_filters*4),
             tr.nn.LeakyReLU(),
+            # 256 to 512
             Conv2dSame(num_filters*4, num_filters*8, 3),
             tr.nn.BatchNorm2d(num_filters*8),
             tr.nn.LeakyReLU(),
             Conv2dSame(num_filters*8, num_filters*8, 3, 2),
             tr.nn.BatchNorm2d(num_filters*8),
             tr.nn.LeakyReLU(),
-            # Add additional block to reduce parameters from 18 gb to 9 gb
+            # 512 to 1024 - Add additional block to reduce parameters from 18 gb to 9 gb
             Conv2dSame(num_filters*8, num_filters*16, 3),
             tr.nn.BatchNorm2d(num_filters*16),
             tr.nn.LeakyReLU(),
             Conv2dSame(num_filters*16, num_filters*16, 3, 2),
             tr.nn.BatchNorm2d(num_filters*16),
             tr.nn.LeakyReLU(),
-            # Add additional block to reduce parameters from 9 gb to 4 gb
-            Conv2dSame(num_filters*16, num_filters*32, 3),
-            tr.nn.BatchNorm2d(num_filters*32),
-            tr.nn.LeakyReLU(),
-            Conv2dSame(num_filters*32, num_filters*32, 3, 2),
-            tr.nn.BatchNorm2d(num_filters*32),
-            tr.nn.LeakyReLU(),
-            # Add additional block to reduce parameters from 4 gb to 2 gb
-            Conv2dSame(num_filters*32, num_filters*64, 3),
-            tr.nn.BatchNorm2d(num_filters*64),
-            tr.nn.LeakyReLU(),
-            Conv2dSame(num_filters*64, num_filters*64, 3, 2),
-            tr.nn.BatchNorm2d(num_filters*64),
-            tr.nn.LeakyReLU(),
-            Flatten(),
-            tr.nn.Linear(hw_flat * num_filters*64, num_fc),
+            tr.nn.Linear(hw_flat * num_filters * 16, num_fc),
             tr.nn.LeakyReLU(),
             tr.nn.Linear(num_fc, 1),
             tr.nn.Sigmoid()

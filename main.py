@@ -65,7 +65,7 @@ class SRGAN(object):
 
     def log_state(self, name, state):
         if self.global_step % (cfg.log_freq * 5) == 0:
-            self.writer.add_image(name, state.squeeze(), self.global_step)
+            self.writer.add_image(name, state[0], self.global_step)
 
 
     def train(self):
@@ -75,7 +75,7 @@ class SRGAN(object):
 
         ds = tr.FloatTensor(cfg.batch_size, 3, 24, 24)
 
-        for epoch in trange(2):
+        for epoch in trange(1):
             
             # Batch
             for i, data in enumerate(self.dataloader):
@@ -83,15 +83,21 @@ class SRGAN(object):
                 # Generate data
                 hr, _ = data
 
+                if hr.size(0) < cfg.batch_size:
+                    break
+
                 # Downsample images to low resolution and normalize
                 for j in range(cfg.batch_size):
                     ds[j] = scale(hr[j])
                     hr[j] = normalize(hr[j])
 
+
+
                 # Generate the super resolution image
                 sr = self.generator(ds)
 
-                # pixelwise MSE 
+                # pixelwise MSE
+                # print(f"ds.shape: {ds.shape}, hr.shape: {hr.shape}, sr.shape: {sr.shape}")
                 loss = self.mse_loss(sr, hr)
 
                 loss.backward()
@@ -105,51 +111,52 @@ class SRGAN(object):
             if epoch % cfg.save_freq == 0:
                 tr.save({'model': self.generator.state_dict(), 'optim': self.optim.state_dict(), 'global_step': self.global_step}, self.save_path)
 
-        # for epoch in trange(cfg.epochs):
+        for epoch in trange(cfg.epochs):
 
-        #     loss = 0
-        #     content_loss = 0
-        #     adversarial_loss = 0
-        #     batch = self.get_batch(1)
+            # Batch
+            for i, data in enumerate(self.dataloader):
+                # Generate data
+                hr, _ = data
 
-        #     for hr, ds in batch:
+                if hr.size(0) < cfg.batch_size:
+                    break
 
-        #         ds = tr.tensor(ds[None], dtype=tr.float32).permute(0, 3, 1, 2)
-        #         hr = tr.tensor(hr[None], dtype=tr.float32).permute(0, 3, 1, 2)
+                # Downsample images to low resolution and normalize
+                for j in range(cfg.batch_size):
+                    ds[j] = scale(hr[j])
+                    hr[j] = normalize(hr[j])
 
-        #         ds = self.normalize(ds)
-        #         hr = self.normalize(hr)
+                # Generate the super resolution image
+                sr = self.generator(ds)
 
-        #         sr = self.generator(ds)
-    
-        #         generated = self.discriminator(sr)
-        #         truth = self.discriminator(hr)
+                # discriminator for natural and generated image
+                generated = self.discriminator(sr)
+                truth = self.discriminator(hr)
 
-        #         # From https://github.com/aitorzip/PyTorch-SRGAN/blob/master/train
-        #         real_features = self.feature_extractor(hr)
-        #         fake_features = self.feature_extractor(sr)
+                # From https://github.com/aitorzip/PyTorch-SRGAN/blob/master/train
+                true_features = self.feature_extractor(hr)
+                generated_features = self.feature_extractor(sr)
 
-        #         # determine loss
-        #         content_loss += self.mse_loss(fake_features, real_features)
-        #         adversarial_loss += (- math.log(generated) - math.log(truth))
+                # determine perceptual loss
+                content_loss = self.mse_loss(true_features, generated_features)
+                adversarial_loss = - math.log(generated) - math.log(truth)
+                loss = content_loss + (1e-3 * adversarial_loss)
 
 
-        #     loss = content_loss + (1e-3 * adversarial_loss)
-        #     loss.backward()
-        #     self.optim.step()
-                
+                loss.backward()
+                self.optim.step()
+        
+                self.logger("loss", loss)
+                self.logger("content_loss", content_loss)
+                self.logger("adversarial_loss", adversarial_loss)
+                self.log_state("Generated", sr)
+                self.log_state("Original", hr)
 
-        #     self.logger("content_loss", content_loss)
-        #     self.logger("adversarial_loss", adversarial_loss)
+                self.global_step += 1
 
-        #     self.logger("loss", loss)
-        #     self.log_state("Generated", sr)
-        #     self.log_state("Original", hr)
+            if epoch % cfg.save_freq == 0:
+                tr.save({'model': self.generator.state_dict(), 'optim': self.optim.state_dict(), 'global_step': self.global_step}, self.save_path)
 
-        #     self.global_step += 1
-
-            # if epoch % cfg.save_freq == 0:
-            #     tr.save({'model': self.generator.state_dict(), 'optim': self.optim.state_dict(), 'global_step': self.global_step}, self.save_path)
 
 
 

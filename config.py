@@ -45,11 +45,11 @@ train_arg.add_argument("--learning_rate", type=float,
                        help="Learning rate (gradient step size)")
 
 train_arg.add_argument("--batch_size", type=int,
-                       default=2,
+                       default=16,
                        help="Number of experiences to sample from memory during training")
 
 train_arg.add_argument("--epochs", type=int,
-                       default=100,
+                       default=20,
                        help="Number of epochs for training")
 
 train_arg.add_argument("--update_iteration",
