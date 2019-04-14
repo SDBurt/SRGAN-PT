@@ -12,10 +12,9 @@ from preprocessing import package_data
 from torchvision.models.vgg import vgg19
 from vgg import LossNetwork, FeatureExtractor
 
-from processing import get_dataset, normalize, scale
+from processing import get_dataset, normalize, reverse_normalize, scale
 
 device = tr.device('cuda' if tr.cuda.is_available() else 'cpu')
-#device = 'cpu'
 cfg = get_config()
 
 class SRGAN(object):
@@ -65,7 +64,9 @@ class SRGAN(object):
 
     def log_state(self, name, state):
         if self.global_step % (cfg.log_freq * 5) == 0:
-            self.writer.add_image(name, state[0], self.global_step)
+            print(state.shape)
+            image = reverse_normalize(state[0])
+            self.writer.add_image(name, image, self.global_step)
 
 
     def train(self):
@@ -75,7 +76,7 @@ class SRGAN(object):
 
         ds = tr.FloatTensor(cfg.batch_size, 3, 24, 24)
 
-        for epoch in trange(1):
+        for epoch in trange(2):
             
             # Batch
             for i, data in enumerate(self.dataloader):
