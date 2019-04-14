@@ -48,6 +48,10 @@ train_arg.add_argument("--pretrain", type=bool,
                        default=False,
                        help="pretrain the generator prior to SRGAN")
 
+train_arg.add_argument("--pretrain_epochs", type=int,
+                       default=100,
+                       help="Number of pretraining epochs")
+
 train_arg.add_argument("--learning_rate", type=float,
                        default=1e-4,
                        help="Learning rate (gradient step size)")

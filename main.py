@@ -69,9 +69,15 @@ class SRGAN(object):
 
     def pretrain(self):
 
+        # Load model
+        if os.path.isfile(self.save_path):
+            checkpoint = tr.load(self.save_path)
+            self.generator.load_state_dict(checkpoint['model_gen'])
+            self.generator.train()
+
         ds = tr.FloatTensor(cfg.batch_size, cfg.num_channels, cfg.cropsize//cfg.factor, cfg.cropsize//cfg.factor)
 
-        for epoch in trange(50):
+        for epoch in trange(cfg.pretrain_epochs):
             
             # Batch
             for i, data in enumerate(self.dataloader):
@@ -87,8 +93,6 @@ class SRGAN(object):
                     ds[j] = scale(hr[j])
                     hr[j] = normalize(hr[j])
 
-
-
                 # Generate the super resolution image
                 sr = self.generator(ds)
 
@@ -96,7 +100,6 @@ class SRGAN(object):
                 self.generator.zero_grad()
 
                 loss = self.mse_loss(sr, hr)
-
                 loss.backward()
                 self.optim_gen.step()
         
@@ -106,50 +109,25 @@ class SRGAN(object):
                 self.global_step += 1
 
             if epoch % cfg.save_freq == 0:
-                tr.save({'gen_model': self.generator.state_dict(), 'optim': self.optim_gen.state_dict(), 'global_step': self.global_step}, self.save_path)
+                tr.save({
+                    'model_gen': self.generator.state_dict(),
+                    'model_disc': self.discriminator.state_dict(),
+                    'optim_gen': self.optim_gen.state_dict(),
+                    'optim_disc': self.optim_disc.state_dict(),
+                    'global_step': self.global_step
+                    }, self.save_path)
 
     def train(self):
 
         # Load model
-        if os.path.isfile(self.save_path):
-            self.generator.load_state_dict(tr.load(self.save_path))
+        if os.path.isfile(self.save_path) and cfg.pretrain is False:
+            checkpoint = tr.load(self.save_path)
+            self.generator.load_state_dict(checkpoint['model_gen'])
+            self.discriminator.load_state_dict(checkpoint['model_disc'])
+            self.generator.train()
+            self.discriminator.train()
 
         ds = tr.FloatTensor(cfg.batch_size, cfg.num_channels, cfg.cropsize//cfg.factor, cfg.cropsize//cfg.factor)
-
-        for epoch in trange(cfg.batch_size):
-            
-            # Batch
-            for i, data in enumerate(self.dataloader):
-
-                # Generate data
-                hr, _ = data
-
-                # error occurs if not batch_size
-                if hr.size(0) < cfg.batch_size:
-                    break
-
-                # Downsample images to low resolution and normalize
-                for j in range(cfg.batch_size):
-                    ds[j] = scale(hr[j])
-                    hr[j] = normalize(hr[j])
-
-                # Generate the super resolution image
-                sr = self.generator(ds)
-
-                # pixelwise MSE
-                # print(f"ds.shape: {ds.shape}, hr.shape: {hr.shape}, sr.shape: {sr.shape}")
-                loss = self.mse_loss(sr, hr)
-
-                loss.backward()
-                self.optim.step()
-        
-                self.logger("loss", loss)
-                self.log_state("Generated", sr)
-                self.log_state("Original", hr)
-                self.global_step += 1
-
-            if epoch % cfg.save_freq == 0:
-                tr.save({'model': self.generator.state_dict(), 'optim': self.optim.state_dict(), 'global_step': self.global_step}, self.save_path)
 
         for epoch in trange(cfg.epochs):
 
@@ -177,35 +155,46 @@ class SRGAN(object):
                 true_features = self.feature_extractor(hr)
                 generated_features = self.feature_extractor(sr)
 
-                # determine perceptual loss
-                content_loss = self.mse_loss(true_features, generated_features)
-                adversarial_loss = - math.log(generated) - math.log(truth)
-                loss = content_loss + (1e-3 * adversarial_loss)
 
+                # discriminator loss
+                self.discriminator.zero_grad()
+                loss_disc = math.log(truth) - math.log(generated)
+                loss_disc.backward()
+                self.optim_disc.step()
 
-                loss.backward()
-                self.optim.step()
+                # generator loss
+                self.generator.zero_grad()
+                content_loss = self.mse_loss(generated_features, true_features)
+                adversarial_loss = math.log(truth) - math.log(generated)
+                loss_gen = content_loss + (1e-3 * adversarial_loss)
+
+                loss_gen.backward()
+                self.optim_gen.step()
         
-                self.logger("loss", loss)
+
                 self.logger("content_loss", content_loss)
                 self.logger("adversarial_loss", adversarial_loss)
+                self.logger("discriminator loss", loss_disc)
                 self.log_state("Generated", sr)
                 self.log_state("Original", hr)
 
                 self.global_step += 1
 
             if epoch % cfg.save_freq == 0:
-                tr.save({'model': self.generator.state_dict(), 'optim': self.optim.state_dict(), 'global_step': self.global_step}, self.save_path)
-
-
-
+                tr.save({
+                    'model_gen': self.generator.state_dict(),
+                    'model_disc': self.discriminator.state_dict(),
+                    'optim_gen': self.optim_gen.state_dict(),
+                    'optim_disc': self.optim_disc.state_dict(),
+                    'global_step': self.global_step
+                    }, self.save_path)
 
 def main():
     srgan = SRGAN(cfg)
     if cfg.pretrain:
         srgan.pretrain()
-        
-    #srgan.train()
+
+    srgan.train()
 
 if __name__ == '__main__':
     main()
