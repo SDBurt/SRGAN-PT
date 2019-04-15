@@ -49,7 +49,7 @@ train_arg.add_argument("--pretrain", type=bool,
                        help="pretrain the generator prior to SRGAN")
 
 train_arg.add_argument("--pretrain_epochs", type=int,
-                       default=10,
+                       default=4,
                        help="Number of pretraining epochs")
 
 train_arg.add_argument("--learning_rate", type=float,
@@ -65,7 +65,7 @@ train_arg.add_argument("--batch_size", type=int,
                        help="Number of experiences to sample from memory during training")
 
 train_arg.add_argument("--epochs", type=int,
-                       default=30,
+                       default=10,
                        help="Number of epochs for training")
 
 train_arg.add_argument("--update_iteration",

@@ -21,7 +21,7 @@ randomcrop = tv.transforms.Compose([
 
 def downsample(img):
     res = to_pil(img)
-    res = res.filter(ImageFilter.GaussianBlur(radius=5))
+    res = res.filter(ImageFilter.GaussianBlur(radius=1))
     res = scale(res)
     return res
 

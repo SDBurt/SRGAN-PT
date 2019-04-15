@@ -26,8 +26,8 @@ class SRGAN(object):
         self.discriminator = Discriminator(cfg)
 
         # Optimizers
-        self.optim_gen = tr.optim.Adam(self.generator.parameters(), betas=(cfg.beta1, 0.999))
-        self.optim_disc = tr.optim.Adam(self.discriminator.parameters(), betas=(cfg.beta1, 0.999))
+        self.optim_gen = tr.optim.Adam(self.generator.parameters(), lr=cfg.learning_rate, betas=(cfg.beta1, 0.999))
+        self.optim_disc = tr.optim.Adam(self.discriminator.parameters(), lr=cfg.learning_rate, betas=(cfg.beta1, 0.999))
           
         # loss models
         self.mse_loss = tr.nn.MSELoss()
@@ -163,7 +163,7 @@ class SRGAN(object):
                 loss_disc = self.bce_loss(truth, real_label) + self.bce_loss(generated, fake_label)
 
                 # Optimize Discriminator
-                loss_disc.backward()
+                loss_disc.backward(retain_graph=True)
                 self.optim_disc.step()
 
                 ## Begin Training Generator
