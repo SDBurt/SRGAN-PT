@@ -56,7 +56,7 @@ class Discriminator(tr.nn.Module):
     def __init__(self, cfg):
         super(Discriminator, self).__init__()
         num_filters = 64
-        hw_flat = int(cfg.lr_resolution[0] / 2**4)**2
+        hw_flat = int(cfg.cropsize / 2**4)**2
         num_fc = 1024
 
         self.model = tr.nn.Sequential(

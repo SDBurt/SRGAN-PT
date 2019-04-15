@@ -154,13 +154,13 @@ class SRGAN(object):
                 # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
                 self.discriminator.zero_grad()
 
-                # discriminator for natural and generated image
-                generated = self.discriminator(sr)
+                ni = tr.randn(hr.size()) # noise image
+                noise = self.discriminator(ni)
                 truth = self.discriminator(hr)
 
                 # Calculate Discriminator Loss
                 # BCELoss use explained here https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
-                loss_disc = self.bce_loss(truth, real_label) + self.bce_loss(generated, fake_label)
+                loss_disc = self.bce_loss(truth, real_label) + self.bce_loss(noise, fake_label)
 
                 # Optimize Discriminator
                 loss_disc.backward(retain_graph=True)
@@ -169,12 +169,14 @@ class SRGAN(object):
                 ## Begin Training Generator
                 self.generator.zero_grad()
 
+                generated = self.discriminator(sr)
+
                 # Calculate Perceptual Loss
                 # From https://github.com/aitorzip/PyTorch-SRGAN/blob/master/train
                 true_features = self.feature_extractor(hr)
                 generated_features = self.feature_extractor(sr)
                 content_loss = self.mse_loss(generated_features, true_features.detach())
-                adversarial_loss = tr.sum(-tr.log(generated))
+                adversarial_loss = self.bce_loss(generated, real_label)
                 loss_gen = content_loss + (1e-3 * adversarial_loss)
 
                 # Optimize Generator

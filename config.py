@@ -16,27 +16,15 @@ def add_argument_group(name):
 # Arguments for preprocessing
 preprocess_arg = add_argument_group("Preprocess")
 
-preprocess_arg.add_argument("--data_dir",
+preprocess_arg.add_argument("--data_dir",  type=str,
                             default="/data/",
                             help="Path to image data")
 
-preprocess_arg.add_argument("--package_data",
-                            default=False,
-                            help="Whether or not to invoke preprocessing.py")
-
-preprocess_arg.add_argument("--hr_resolution",
-                            default=(1536,1536),
-                            help="Resolution of downsampled images")
-
-preprocess_arg.add_argument("--lr_resolution",
-                            default=(96,96),
-                            help="Resolution of downsampled images")
-
-preprocess_arg.add_argument("--cropsize",
+preprocess_arg.add_argument("--cropsize", type=int,
                             default=96,
                             help="cropped size of HR image")
 
-preprocess_arg.add_argument("--factor",
+preprocess_arg.add_argument("--factor", type=int,
                             default=4,
                             help="Downsample factor")
 

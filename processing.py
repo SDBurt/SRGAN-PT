@@ -15,7 +15,7 @@ reverse_normalize = tv.transforms.Compose([
 ])
 
 randomcrop = tv.transforms.Compose([
-    tv.transforms.RandomCrop(96),
+    tv.transforms.RandomCrop(cfg.cropsize),
     tv.transforms.ToTensor()
 ])
 
@@ -28,9 +28,9 @@ def downsample(img):
 to_pil = tv.transforms.ToPILImage()
 
 scale = tv.transforms.Compose([
-    tv.transforms.Resize(24, Image.BICUBIC),
+    tv.transforms.Resize(cfg.cropsize//cfg.factor, Image.BICUBIC),
     tv.transforms.ToTensor(),
-    tv.transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])
+    normalize
 ])
 
 def get_dataset(path):
