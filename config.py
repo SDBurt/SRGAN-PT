@@ -17,7 +17,7 @@ def add_argument_group(name):
 preprocess_arg = add_argument_group("Preprocess")
 
 preprocess_arg.add_argument("--data_dir",
-                            default="/data",
+                            default="/data/",
                             help="Path to image data")
 
 preprocess_arg.add_argument("--package_data",
@@ -49,19 +49,23 @@ train_arg.add_argument("--pretrain", type=bool,
                        help="pretrain the generator prior to SRGAN")
 
 train_arg.add_argument("--pretrain_epochs", type=int,
-                       default=100,
+                       default=10,
                        help="Number of pretraining epochs")
 
 train_arg.add_argument("--learning_rate", type=float,
                        default=1e-4,
                        help="Learning rate (gradient step size)")
 
+train_arg.add_argument("--beta1", type=float,
+                       default=0.9,
+                       help="Hyperparam for Adam Optimizer")
+
 train_arg.add_argument("--batch_size", type=int,
                        default=16,
                        help="Number of experiences to sample from memory during training")
 
 train_arg.add_argument("--epochs", type=int,
-                       default=20,
+                       default=30,
                        help="Number of epochs for training")
 
 train_arg.add_argument("--update_iteration",
@@ -73,7 +77,7 @@ train_arg.add_argument("--log_dir", type=str,
                        help="Directory to save logs")
 
 train_arg.add_argument("--log_freq", type=int,
-                       default=4,
+                       default=2,
                        help="Number of steps before logging weights")
 
 train_arg.add_argument("--save_dir", type=str,

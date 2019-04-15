@@ -5,7 +5,7 @@ from layers import Residual, Flatten, Conv2dSame, Conv2dSame
 class Generator(tr.nn.Module):
     def __init__(self, cfg):
         super(Generator, self).__init__()
-        num_blks = 5
+        num_blks = 16
         num_filters = 64
 
         blocks = []
@@ -56,13 +56,15 @@ class Discriminator(tr.nn.Module):
     def __init__(self, cfg):
         super(Discriminator, self).__init__()
         num_filters = 64
-        hw_flat = int(cfg.lr_resolution[0] / 2**3)**2
+        hw_flat = int(cfg.lr_resolution[0] / 2**4)**2
         num_fc = 1024
 
         self.model = tr.nn.Sequential(
-            # Channels in, channels out, filter size, stride, padding
+            # Channels in, channels out, filter size, stride, padding\
+            # 3 to 64
             Conv2dSame(cfg.num_channels, num_filters, 3),
             tr.nn.LeakyReLU(),
+            # 64 to 64
             Conv2dSame(num_filters, num_filters, 3, 2),
             tr.nn.BatchNorm2d(num_filters),
             tr.nn.LeakyReLU(),
@@ -70,6 +72,7 @@ class Discriminator(tr.nn.Module):
             Conv2dSame(num_filters, num_filters*2, 3),
             tr.nn.BatchNorm2d(num_filters*2),
             tr.nn.LeakyReLU(),
+            # 128 to 128
             Conv2dSame(num_filters*2, num_filters*2, 3, 2),
             tr.nn.BatchNorm2d(num_filters*2),
             tr.nn.LeakyReLU(),
@@ -77,6 +80,7 @@ class Discriminator(tr.nn.Module):
             Conv2dSame(num_filters*2, num_filters*4, 3),
             tr.nn.BatchNorm2d(num_filters*4),
             tr.nn.LeakyReLU(),
+            # 256 to 256
             Conv2dSame(num_filters*4, num_filters*4, 3, 2),
             tr.nn.BatchNorm2d(num_filters*4),
             tr.nn.LeakyReLU(),
@@ -84,9 +88,11 @@ class Discriminator(tr.nn.Module):
             Conv2dSame(num_filters*4, num_filters*8, 3),
             tr.nn.BatchNorm2d(num_filters*8),
             tr.nn.LeakyReLU(),
+            # 512 to 512
             Conv2dSame(num_filters*8, num_filters*8, 3, 2),
             tr.nn.BatchNorm2d(num_filters*8),
             tr.nn.LeakyReLU(),
+            Flatten(),
             tr.nn.Linear(hw_flat * num_filters * 8, num_fc),
             tr.nn.LeakyReLU(),
             tr.nn.Linear(num_fc, 1),

@@ -1,5 +1,7 @@
 import torch as tr
 import torchvision as tv
+import PIL
+from PIL import Image, ImageFilter
 from config import get_config
 
 cfg = get_config()
@@ -17,12 +19,20 @@ randomcrop = tv.transforms.Compose([
     tv.transforms.ToTensor()
 ])
 
+def downsample(img):
+    res = to_pil(img)
+    res = res.filter(ImageFilter.GaussianBlur(radius=5))
+    res = scale(res)
+    return res
+
+to_pil = tv.transforms.ToPILImage()
+
 scale = tv.transforms.Compose([
-    tv.transforms.ToPILImage(),
-    tv.transforms.Resize(24),
+    tv.transforms.Resize(24, Image.BICUBIC),
     tv.transforms.ToTensor(),
     tv.transforms.Normalize(mean = [0.485, 0.456, 0.406], std = [0.229, 0.224, 0.225])
 ])
 
 def get_dataset(path):
+    print(f'Loading images from: {path}')
     return tv.datasets.ImageFolder(root=path, transform=randomcrop)
