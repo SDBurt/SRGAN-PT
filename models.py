@@ -35,7 +35,7 @@ class Generator(tr.nn.Module):
             tr.nn.PixelShuffle(2),
  
             tr.nn.PReLU(),
-            Conv2dSame(num_filters//2, cfg.num_channels, 9)
+            Conv2dSame(num_filters//2, cfg.num_channels, 9),
         )
         self.block1.apply(self.init_weights)
 

@@ -145,24 +145,38 @@ class SRGAN(object):
                     break
 
                 # mini-batch data (ToTensor() normalizes between [0,1])
+                # randn() instead of rand() for normalized input [-1,1]
+                nz = tr.rand((hr.size(0),hr.size(1),hr.size(2)//cfg.factor, hr.size(3)//cfg.factor))
                 for j in range(cfg.batch_size):
                     ds[j] = downsample(hr[j])
                     hr[j] = normalize(hr[j])
+                    nz[j] = normalize(nz[j])
 
                 ## Begin Training Discriminator
-                # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
+                # ----------------------------------------------------------------
                 self.discriminator.zero_grad()
+                # Why zero_grad
+                # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
+
+                # BCELoss use explained here
+                # https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
+
+                # train real
                 truth = self.discriminator(hr)
+                loss_truth = self.bce_loss(truth, real_label)
+                loss_truth.backward() 
 
-                # Calculate Discriminator Loss
-                # BCELoss use explained here https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
-                loss_disc = self.bce_loss(truth, real_label)
+                # train fake
+                noise = self.generator(nz)
+                fake = self.discriminator(noise.detach())
+                loss_fake = self.bce_loss(fake, fake_label)
+                loss_fake.backward() 
 
-                # Optimize Discriminator
-                loss_disc.backward()
+                loss_disc = loss_truth + loss_fake
                 self.optim_disc.step()
 
-                ## Begin Training Generator
+                # Begin Training Generator
+                # ----------------------------------------------------------------
                 self.generator.zero_grad()
 
                 # Generate the super resolution image and judge it
