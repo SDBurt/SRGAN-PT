@@ -31,10 +31,14 @@ def downsample(img):
     res = scale(res)
     return res
 
+    
+
+# Remove normalize if you want data to be between [0,1]
+# Update logger and train()
 scale = tv.transforms.Compose([
     tv.transforms.Resize(cfg.cropsize//cfg.factor, Image.BICUBIC),
     tt,
-    #normalize
+    normalize,
 ])
 
 def get_dataset(path):

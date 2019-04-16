@@ -17,7 +17,7 @@ def add_argument_group(name):
 preprocess_arg = add_argument_group("Preprocess")
 
 preprocess_arg.add_argument("--data_dir",  type=str,
-                            default="/data/",
+                            default="./data/",
                             help="Path to image data")
 
 preprocess_arg.add_argument("--cropsize", type=int,
