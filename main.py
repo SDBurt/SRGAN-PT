@@ -188,7 +188,7 @@ class SRGAN(object):
                 generated_features = self.feature_extractor(sr)
                 content_loss = self.mse_loss(generated_features, true_features)
                 adversarial_loss = self.bce_loss(generated, real_label)
-                loss_gen = content_loss + (1e-3 * adversarial_loss)
+                loss_gen = content_loss + (10e-3 * adversarial_loss)
 
                 # Optimize Generator
                 loss_gen.backward()
