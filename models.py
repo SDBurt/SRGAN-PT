@@ -1,5 +1,5 @@
 import torch as tr
-from layers import Residual, Flatten, Conv2dSame, Conv2dSame
+from layers import Residual, Flatten, Conv2dSame
 
 
 class Generator(tr.nn.Module):
@@ -63,38 +63,38 @@ class Discriminator(tr.nn.Module):
             # Channels in, channels out, filter size, stride, padding\
             # 3 to 64
             Conv2dSame(cfg.num_channels, num_filters, 3),
-            tr.nn.LeakyReLU(),
+            tr.nn.LeakyReLU(0.2),
             # 64 to 64
             Conv2dSame(num_filters, num_filters, 3, 2),
             tr.nn.BatchNorm2d(num_filters),
-            tr.nn.LeakyReLU(),
+            tr.nn.LeakyReLU(0.2),
             # 64 to 128
             Conv2dSame(num_filters, num_filters*2, 3),
             tr.nn.BatchNorm2d(num_filters*2),
-            tr.nn.LeakyReLU(),
+            tr.nn.LeakyReLU(0.2),
             # 128 to 128
             Conv2dSame(num_filters*2, num_filters*2, 3, 2),
             tr.nn.BatchNorm2d(num_filters*2),
-            tr.nn.LeakyReLU(),
+            tr.nn.LeakyReLU(0.2),
             # 128 to 256
             Conv2dSame(num_filters*2, num_filters*4, 3),
             tr.nn.BatchNorm2d(num_filters*4),
-            tr.nn.LeakyReLU(),
+            tr.nn.LeakyReLU(0.2),
             # 256 to 256
             Conv2dSame(num_filters*4, num_filters*4, 3, 2),
             tr.nn.BatchNorm2d(num_filters*4),
-            tr.nn.LeakyReLU(),
+            tr.nn.LeakyReLU(0.2),
             # 256 to 512
             Conv2dSame(num_filters*4, num_filters*8, 3),
             tr.nn.BatchNorm2d(num_filters*8),
-            tr.nn.LeakyReLU(),
+            tr.nn.LeakyReLU(0.2),
             # 512 to 512
             Conv2dSame(num_filters*8, num_filters*8, 3, 2),
             tr.nn.BatchNorm2d(num_filters*8),
-            tr.nn.LeakyReLU(),
+            tr.nn.LeakyReLU(0.2),
             Flatten(),
             tr.nn.Linear(hw_flat * num_filters * 8, num_fc),
-            tr.nn.LeakyReLU(),
+            tr.nn.LeakyReLU(0.2),
             tr.nn.Linear(num_fc, 1),
             tr.nn.Sigmoid()
         )
@@ -107,4 +107,3 @@ class Discriminator(tr.nn.Module):
     def init_weights(self, layer):
         if type(layer) in [tr.nn.Conv2d, tr.nn.Linear]:
             tr.nn.init.xavier_uniform_(layer.weight)
-

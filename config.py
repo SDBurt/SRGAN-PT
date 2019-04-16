@@ -37,11 +37,11 @@ train_arg.add_argument("--pretrain", type=bool,
                        help="pretrain the generator prior to SRGAN")
 
 train_arg.add_argument("--pretrain_epochs", type=int,
-                       default=4,
+                       default=10,
                        help="Number of pretraining epochs")
 
 train_arg.add_argument("--learning_rate", type=float,
-                       default=1e-4,
+                       default=1e-3,
                        help="Learning rate (gradient step size)")
 
 train_arg.add_argument("--beta1", type=float,

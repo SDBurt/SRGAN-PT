@@ -48,15 +48,14 @@ class Residual(tr.nn.Module):
         super(Residual, self).__init__()
         self.layer = tr.nn.Sequential(
             # Channels in, channels out, filter size, stride, padding
-            Conv2dSame(num_filters, num_filters, 3),
+            tr.nn.Conv2d(num_filters, num_filters, 3, padding=1),
             tr.nn.BatchNorm2d(num_filters),
             tr.nn.PReLU(),
-            Conv2dSame(num_filters, num_filters, 3),
+            tr.nn.Conv2d(num_filters, num_filters, 3, padding=1),
             tr.nn.BatchNorm2d(num_filters)
         )
-        self.PReLU = tr.nn.PReLU()
 
     def forward(self, x_in):
         x_out = self.layer(x_in)
-        return self.PReLU(x_out + x_in)
+        return x_out + x_in
  

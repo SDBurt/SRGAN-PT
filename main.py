@@ -1,18 +1,17 @@
 import torch as tr
 import torchvision as tv
 import numpy as np
-import cv2, random, os, h5py, math
+import random, os, math
 from tqdm import trange
 from pathlib import Path
 from datetime import datetime
 from tensorboardX import SummaryWriter
 from config import get_config
 from models import Generator, Discriminator
-from preprocessing import package_data
 from torchvision.models.vgg import vgg19
 from vgg import FeatureExtractor
 
-from processing import get_dataset, normalize, reverse_normalize, downsample
+from processing import get_dataset, downsample
 
 device = tr.device('cuda' if tr.cuda.is_available() else 'cpu')
 cfg = get_config()
@@ -31,12 +30,11 @@ class SRGAN(object):
           
         # loss models
         self.mse_loss = tr.nn.MSELoss()
-        self.bce_loss = tr.nn.BCELoss()
+        self.bce_loss = tr.nn.BCELoss(reduction='sum')
         self.feature_extractor = FeatureExtractor(vgg19(pretrained=True))
 
         #self.preprocessing()
-        cwd = os.getcwd()
-        data_path = cwd + cfg.data_dir
+        data_path = os.getcwd() + cfg.data_dir
         dataset = get_dataset(data_path)
         self.dataloader = tr.utils.data.DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True)  
 
@@ -65,11 +63,10 @@ class SRGAN(object):
 
     def log_state(self, name, state):
         if self.global_step % (cfg.log_freq * 5) == 0:
-            image = reverse_normalize(state[0])
-            self.writer.add_image(name, image, self.global_step)
+            self.writer.add_image(name, state[0], self.global_step)
 
     def pretrain(self):
-
+        '''Pretrain the generator network using a MSE loss function. This is done so that SRGAN generator does not fall into a local optima'''
         print('Pretraining Generator')
         
         ds = tr.FloatTensor(cfg.batch_size, cfg.num_channels, cfg.cropsize//cfg.factor, cfg.cropsize//cfg.factor)
@@ -79,16 +76,15 @@ class SRGAN(object):
             # Batch
             for i, data in enumerate(self.dataloader):
 
-                # Generate data
+                # mini-batch data
                 hr, _ = data
 
                 if hr.size(0) < cfg.batch_size:
                     break
 
-                # Downsample images to low resolution and normalize
+                # Downsample images to low resolution
                 for j in range(cfg.batch_size):
                     ds[j] = downsample(hr[j])
-                    hr[j] = normalize(hr[j])
 
                 # Generate the super resolution image
                 sr = self.generator(ds)
@@ -114,12 +110,15 @@ class SRGAN(object):
                     }, './pretrained_models/pretrained.pt')
 
     def train(self):
+        '''Train the SRGAN using the just pretrained or past pretrained generator.'''
 
-        if os.path.isfile('./pretrained_models/pretrained.pt') and cfg.pretrain is False:
+
+        if os.path.isfile('./pretrained_models/pretrained.pt'):
+            print("loaded_checkpoint: ./pretrained_models/pretrained.pt")
             checkpoint = tr.load('./pretrained_models/pretrained.pt')
             self.generator.load_state_dict(checkpoint['model_gen'])
             self.optim_gen.load_state_dict(checkpoint['optim_gen'])
-            self.generator.train()
+            self.generator.eval()
 
         print('Training SRGAN')
 
@@ -129,7 +128,7 @@ class SRGAN(object):
         self.global_step = 0
 
         real_label = tr.ones((cfg.batch_size,1))
-        fake_label = tr.ones((cfg.batch_size,1))
+        fake_label = tr.zeros((cfg.batch_size,1))
 
         for epoch in trange(cfg.epochs):
 
@@ -142,19 +141,15 @@ class SRGAN(object):
                 if hr.size(0) < cfg.batch_size:
                     break
 
-                # Downsample/Normalize images
+                # mini-batch data (ToTensor() normalizes between [0,1])
                 for j in range(cfg.batch_size):
                     ds[j] = downsample(hr[j])
-                    hr[j] = normalize(hr[j])
-
-                # Generate the super resolution image
-                sr = self.generator(ds)
 
                 ## Begin Training Discriminator
                 # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
                 self.discriminator.zero_grad()
 
-                ni = tr.randn(hr.size()) # noise image
+                ni = tr.rand(hr.size()) # noise image
                 noise = self.discriminator(ni)
                 truth = self.discriminator(hr)
 
@@ -163,19 +158,20 @@ class SRGAN(object):
                 loss_disc = self.bce_loss(truth, real_label) + self.bce_loss(noise, fake_label)
 
                 # Optimize Discriminator
-                loss_disc.backward(retain_graph=True)
+                loss_disc.backward()
                 self.optim_disc.step()
 
                 ## Begin Training Generator
                 self.generator.zero_grad()
 
+                # Generate the super resolution image and judge it
+                sr = self.generator(ds)
                 generated = self.discriminator(sr)
 
                 # Calculate Perceptual Loss
-                # From https://github.com/aitorzip/PyTorch-SRGAN/blob/master/train
                 true_features = self.feature_extractor(hr)
                 generated_features = self.feature_extractor(sr)
-                content_loss = self.mse_loss(generated_features, true_features.detach())
+                content_loss = self.mse_loss(generated_features, true_features)
                 adversarial_loss = self.bce_loss(generated, real_label)
                 loss_gen = content_loss + (1e-3 * adversarial_loss)
 
@@ -197,20 +193,11 @@ class SRGAN(object):
                 # Increment Tape
                 self.global_step += 1
 
-            # if epoch % cfg.save_freq == 0:
-            #     tr.save({
-            #         'model_gen': self.generator.state_dict(),
-            #         'model_disc': self.discriminator.state_dict(),
-            #         'optim_gen': self.optim_gen.state_dict(),
-            #         'optim_disc': self.optim_disc.state_dict(),
-            #         'global_step': self.global_step
-            #         }, '.pretrained_models/pretrained_20epochs.pt')
-
 
 def main():
     srgan = SRGAN(cfg)
 
-    if cfg.pretrain:
+    if cfg.pretrain is True:
         srgan.pretrain()
 
     srgan.train()
