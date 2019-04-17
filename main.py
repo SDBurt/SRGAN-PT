@@ -20,8 +20,8 @@ class SRGAN(object):
         super(SRGAN, self).__init__()
 
         # Networks
-        self.generator = Generator(cfg).to(device)
-        self.discriminator = Discriminator(cfg).to(device)
+        self.generator = Generator(cfg)
+        self.discriminator = Discriminator(cfg)
 
         # Optimizers
         self.optim_gen = tr.optim.Adam(self.generator.parameters(), lr=cfg.learning_rate, betas=(cfg.beta1, 0.999))
@@ -58,9 +58,9 @@ class SRGAN(object):
             # Log vars
             self.writer.add_scalar(name, loss, self.global_step)
 
-    def log_state(self, name, state):
+    def log_state(self, name, image):
         if self.global_step % (cfg.log_freq * 5) == 0:
-            image = reverse_normalize(state)
+            image = reverse_normalize(image)
             self.writer.add_image(name, image, self.global_step)
 
     def pretrain(self):
@@ -97,7 +97,7 @@ class SRGAN(object):
                     hr[j] = normalize(hr[j])
 
                 # Generate the super resolution image
-                sr = self.generator(ds.to(device))
+                sr = self.generator(ds)
 
                 # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
                 self.generator.zero_grad()
@@ -137,8 +137,8 @@ class SRGAN(object):
         # Restart global step for SRGAN tape
         self.global_step = 0
 
-        real_label = tr.ones((cfg.batch_size,1)).to(device)
-        fake_label = tr.zeros((cfg.batch_size,1)).to(device)
+        real_label = tr.ones((cfg.batch_size,1))
+        fake_label = tr.zeros((cfg.batch_size,1))
 
         for epoch in trange(cfg.epochs):
 
@@ -169,12 +169,12 @@ class SRGAN(object):
                 # https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
 
                 # train real
-                truth = self.discriminator(hr.to(device))
+                truth = self.discriminator(hr)
                 loss_truth = self.bce_loss(truth, real_label)
                 loss_truth.backward() 
 
                 # train fake
-                noise = self.generator(nz.to(device))
+                noise = self.generator(nz)
                 fake = self.discriminator(noise.detach())
                 loss_fake = self.bce_loss(fake, fake_label)
                 loss_fake.backward() 
