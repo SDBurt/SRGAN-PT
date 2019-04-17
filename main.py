@@ -8,10 +8,9 @@ from datetime import datetime
 from tensorboardX import SummaryWriter
 from config import get_config
 from models import Generator, Discriminator
-from torchvision.models.vgg import vgg19
 from vgg import FeatureExtractor
 
-from processing import get_dataset, downsample, reverse_normalize, normalize
+from processing import get_dataset, downsample, reverse_normalize, normalize, randomcrop, tt
 
 device = tr.device('cuda' if tr.cuda.is_available() else 'cpu')
 cfg = get_config()
@@ -21,8 +20,8 @@ class SRGAN(object):
         super(SRGAN, self).__init__()
 
         # Networks
-        self.generator = Generator(cfg)
-        self.discriminator = Discriminator(cfg)
+        self.generator = Generator(cfg).to(device)
+        self.discriminator = Discriminator(cfg).to(device)
 
         # Optimizers
         self.optim_gen = tr.optim.Adam(self.generator.parameters(), lr=cfg.learning_rate, betas=(cfg.beta1, 0.999))
@@ -31,7 +30,7 @@ class SRGAN(object):
         # loss models
         self.mse_loss = tr.nn.MSELoss()
         self.bce_loss = tr.nn.BCELoss(reduction='sum')
-        self.feature_extractor = FeatureExtractor(vgg19(pretrained=True))
+        self.feature_extractor = FeatureExtractor()
 
         # Get image dataset (cropped)
         dataset = get_dataset(cfg.data_dir)
@@ -69,7 +68,9 @@ class SRGAN(object):
         
         if os.path.isfile('./pretrained_models/pretrained.pt'):
             print("loaded_checkpoint: ./pretrained_models/pretrained.pt")
-            self.generator.load_state_dict(tr.load('./pretrained_models/pretrained.pt'))
+            checkpoint = tr.load('./pretrained_models/pretrained.pt')
+            self.generator.load_state_dict(checkpoint['generator_state'])
+            self.optim_gen.load_state_dict(checkpoint['generator_optimizer'])
             self.generator.train()
         
         print('Pretraining Generator')
@@ -83,6 +84,7 @@ class SRGAN(object):
 
                 # mini-batch data
                 hr, _ = data
+                
 
                 if hr.size(0) < cfg.batch_size:
                     break
@@ -95,7 +97,7 @@ class SRGAN(object):
                     hr[j] = normalize(hr[j])
 
                 # Generate the super resolution image
-                sr = self.generator(ds)
+                sr = self.generator(ds.to(device))
 
                 # https://stackoverflow.com/questions/48001598/why-do-we-need-to-call-zero-grad-in-pytorch
                 self.generator.zero_grad()
@@ -112,7 +114,10 @@ class SRGAN(object):
                 self.global_step += 1
 
             if epoch % cfg.save_freq == 0:
-                tr.save(self.generator.state_dict(), './pretrained_models/pretrained.pt')
+                tr.save({
+                    'generator_state': self.generator.state_dict(),
+                    'generator_optimizer': self.optim_gen.state_dict()
+                }, './pretrained_models/pretrained.pt')
 
     def train(self):
         '''Train the SRGAN using the just pretrained or past pretrained generator.'''
@@ -120,7 +125,9 @@ class SRGAN(object):
 
         if os.path.isfile('./pretrained_models/pretrained.pt'):
             print("loaded_checkpoint: ./pretrained_models/pretrained.pt")
-            self.generator.load_state_dict(tr.load('./pretrained_models/pretrained.pt'))
+            checkpoint = tr.load('./pretrained_models/pretrained.pt')
+            self.generator.load_state_dict(checkpoint['generator_state'])
+            self.optim_gen.load_state_dict(checkpoint['generator_optimizer'])
             self.generator.train()
 
         print('Training SRGAN')
@@ -130,8 +137,8 @@ class SRGAN(object):
         # Restart global step for SRGAN tape
         self.global_step = 0
 
-        real_label = tr.ones((cfg.batch_size,1))
-        fake_label = tr.zeros((cfg.batch_size,1))
+        real_label = tr.ones((cfg.batch_size,1)).to(device)
+        fake_label = tr.zeros((cfg.batch_size,1)).to(device)
 
         for epoch in trange(cfg.epochs):
 
@@ -162,12 +169,12 @@ class SRGAN(object):
                 # https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
 
                 # train real
-                truth = self.discriminator(hr)
+                truth = self.discriminator(hr.to(device))
                 loss_truth = self.bce_loss(truth, real_label)
                 loss_truth.backward() 
 
                 # train fake
-                noise = self.generator(nz)
+                noise = self.generator(nz.to(device))
                 fake = self.discriminator(noise.detach())
                 loss_fake = self.bce_loss(fake, fake_label)
                 loss_fake.backward() 
@@ -208,6 +215,15 @@ class SRGAN(object):
                 # Increment Tape
                 self.global_step += 1
 
+            if epoch % cfg.save_freq == 0:
+                tr.save({
+                    'generator_state': self.generator.state_dict(),
+                    'generator_optimizer': self.optim_gen.state_dict()
+                }, self.save_path+'.pt')
+
+            # Get image dataset (cropped)
+            dataset = get_dataset(cfg.data_dir)
+            self.dataloader = tr.utils.data.DataLoader(dataset, batch_size=cfg.batch_size, shuffle=True)  
 
 def main():
     srgan = SRGAN(cfg)

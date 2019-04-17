@@ -20,7 +20,7 @@ reverse_normalize = tv.transforms.Compose([
 # ToTensor() normalizes image between [0,1]
 randomcrop = tv.transforms.Compose([
     tv.transforms.RandomCrop(cfg.cropsize),
-    tt
+    tt,
 ])
 
 
@@ -31,7 +31,6 @@ def downsample(img):
     res = scale(res)
     return res
 
-    
 
 # Remove normalize if you want data to be between [0,1]
 # Update logger and train()
@@ -45,5 +44,5 @@ def get_dataset(path):
     '''Use torchvision Imagefolder to receive and randomly crop all input images'''
     if not path.endswith("/"):
         path = path + "/"
-    print(f'Loading images from: {path}')
+    #print(f'Loading images from: {path}')
     return tv.datasets.ImageFolder(root=path, transform=randomcrop)
