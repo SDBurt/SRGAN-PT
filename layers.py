@@ -20,6 +20,7 @@ class Conv2dSame(tr.nn.Module):
         self.layer = tr.nn.Conv2d(in_channels, out_channels, kernel_size, stride, dilation=dilation)
 
     def forward(self, x_in):
+        
         N, C, H, W = x_in.shape
         H2 = math.ceil(H / self.S)
         W2 = math.ceil(W / self.S)
@@ -42,9 +43,8 @@ class Residual(tr.nn.Module):
             Conv2dSame(num_filters, num_filters, 3),
             tr.nn.BatchNorm2d(num_filters)
         )
-        self.PReLU = tr.nn.PReLU()
 
     def forward(self, x_in):
         x_out = self.layer(x_in)
-        return self.PReLU(x_out + x_in)
+        return x_out + x_in
  

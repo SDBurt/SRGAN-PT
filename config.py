@@ -16,23 +16,15 @@ def add_argument_group(name):
 # Arguments for preprocessing
 preprocess_arg = add_argument_group("Preprocess")
 
-preprocess_arg.add_argument("--data_dir",
-                            default="/data",
+preprocess_arg.add_argument("--data_dir",  type=str,
+                            default="./data/",
                             help="Path to image data")
 
-preprocess_arg.add_argument("--package_data",
-                            default=False,
-                            help="Whether or not to invoke preprocessing.py")
+preprocess_arg.add_argument("--cropsize", type=int,
+                            default=96,
+                            help="cropped size of HR image")
 
-preprocess_arg.add_argument("--hr_resolution",
-                            default=(1536,1536),
-                            help="Resolution of downsampled images")
-
-preprocess_arg.add_argument("--lr_resolution",
-                            default=(96,96),
-                            help="Resolution of downsampled images")
-
-preprocess_arg.add_argument("-factor",
+preprocess_arg.add_argument("--factor", type=int,
                             default=4,
                             help="Downsample factor")
 
@@ -40,16 +32,28 @@ preprocess_arg.add_argument("-factor",
 # Arguments for training
 train_arg = add_argument_group("Training")
 
+train_arg.add_argument("--pretrain", type=bool,
+                       default=False,
+                       help="pretrain the generator prior to SRGAN")
+
+train_arg.add_argument("--pretrain_epochs", type=int,
+                       default=20,
+                       help="Number of pretraining epochs")
+
 train_arg.add_argument("--learning_rate", type=float,
-                       default=1e-4,
+                       default=1e-3,
                        help="Learning rate (gradient step size)")
 
+train_arg.add_argument("--beta1", type=float,
+                       default=0.9,
+                       help="Hyperparam for Adam Optimizer")
+
 train_arg.add_argument("--batch_size", type=int,
-                       default=32,
+                       default=16,
                        help="Number of experiences to sample from memory during training")
 
 train_arg.add_argument("--epochs", type=int,
-                       default=10,
+                       default=40,
                        help="Number of epochs for training")
 
 train_arg.add_argument("--update_iteration",
@@ -61,7 +65,7 @@ train_arg.add_argument("--log_dir", type=str,
                        help="Directory to save logs")
 
 train_arg.add_argument("--log_freq", type=int,
-                       default=10,
+                       default=2,
                        help="Number of steps before logging weights")
 
 train_arg.add_argument("--save_dir", type=str,
@@ -69,7 +73,7 @@ train_arg.add_argument("--save_dir", type=str,
                        help="Directory to save current model")
 
 train_arg.add_argument("--save_freq", type=int,
-                       default=10,
+                       default=5,
                        help="Number of episodes before saving model")
 
 train_arg.add_argument("-f", "--extension", type=str,
