@@ -30,6 +30,10 @@ bibsource = {dblp computer science bibliography, https://dblp.org}
 
 Our approach was to imitate the implementation of this paper, and to see its significance to real-world noise. We created our own dataset for testing our theory that the results of the GAN was undoing the downsampling, ie. undoing the gaussian noise.
 
+Unfortunately due to the time constraint from other classes and the magnitude of this project, the model has a flaw which makes the network not converge towards meaningful results. This is possibly due to normalization problems, or a problem with the custom convolution as PyTorch does not have an option for 'same' padding. It is also possible that we are misinterpreting the Content Loss (VGG19 network).
+
+Overall this was a great learning experience and I personally hope to recreate/modify this in the future.
+
 ## Get Started
 
 The following information is needed in order to get this project up and running on your system.
@@ -41,11 +45,18 @@ The following information is needed in order to get this project up and running 
 
 ### Data
 
-The data for this project uses high resoltuion images. These images can come from a number of sources.
-- Berkeley Segmentation Dataset: https://www2.eecs.berkeley.edu/Research/Projects/CS/vision/bsds/
-- ImageNet: http://www.image-net.org/
+The high resolution images that were used during training were from: http://image-net.org/challenges/LSVRC/2017/download-images-1p39.php
 
-Other datasets mention in the paper, such as *Set 5* and *Set 14* were discovered in [this](https://github.com/jbhuang0604/SelfExSR) github repo. Image sets are from their results, but the HR images are in there as well.
+>@article{ILSVRC15,
+Author = {Olga Russakovsky and Jia Deng and Hao Su and Jonathan Krause and Sanjeev Satheesh and Sean Ma and Zhiheng Huang and Andrej Karpathy and Aditya Khosla and Michael Bernstein and Alexander C. Berg and Li Fei-Fei},
+Title = {{ImageNet Large Scale Visual Recognition Challenge}},
+Year = {2015},
+journal   = {International Journal of Computer Vision (IJCV)},
+doi = {10.1007/s11263-015-0816-y},
+volume={115},
+number={3},
+pages={211-252}
+}
 
 ### Command Line Arguments
 
